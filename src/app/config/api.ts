@@ -3,7 +3,7 @@
  * Single source of truth for all API-related constants
  */
 
-export const BASE_URL = "https://milliymock.uz/";
+export const BASE_URL = "http://localhost:5227/";
 
 // API Endpoints
 export const API_ENDPOINTS = {

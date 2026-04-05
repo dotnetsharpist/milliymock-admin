@@ -31,7 +31,7 @@ export interface UpdateStandaloneOptionData {
   isCorrect?: boolean;
 }
 
-export const standaloneOptionService = {
+export const optionService = {
   /**
    * Get options by question ID
    *
@@ -91,4 +91,4 @@ export const standaloneOptionService = {
   },
 };
 
-export default standaloneOptionService;
+export default optionService;

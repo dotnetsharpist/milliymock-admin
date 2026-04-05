@@ -18,7 +18,7 @@ import {
 } from "../ui/select";
 import { Plus, Trash2, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { standaloneOptionService } from "../../services/standaloneOptionService";
+import { optionService } from "../../services/optionService";
 
 // Local interface for UI state - includes questionId for component logic
 // NOTE: API responses don't include questionId, we add it locally for UI management
@@ -98,12 +98,12 @@ export function QuestionOptionsModal({
       const questionIdStr = `sq-${questionId}`;
 
       // Delete all existing options and create new ones
-      const existingOptionsResponse = await standaloneOptionService.getOptionsByQuestionId(questionIdStr);
+      const existingOptionsResponse = await optionService.getOptionsByQuestionId(questionIdStr);
 
       if (existingOptionsResponse.success && existingOptionsResponse.data) {
         await Promise.all(
           existingOptionsResponse.data.map((opt) =>
-            standaloneOptionService.deleteOption(
+            optionService.deleteOption(
               typeof opt.id === 'string' ? opt.id : String(opt.id)
             )
           )
@@ -113,7 +113,7 @@ export function QuestionOptionsModal({
       // Create new options
       await Promise.all(
         options.map((opt) =>
-          standaloneOptionService.createOption({
+          optionService.createOption({
             questionId: questionIdStr,
             text: opt.text,
             isCorrect: opt.isCorrect,
@@ -176,11 +176,8 @@ export function QuestionOptionsModal({
                     <Input
                       id={`text-${option.id}`}
                       value={option.text}
-                      onChange={(e) =>
-                        handleUpdateOption(option.id, "text", e.target.value)
-                      }
                       placeholder="Enter option text"
-                      disabled={isSaving}
+                      readOnly={true}
                     />
                   </div>
 
@@ -188,10 +185,7 @@ export function QuestionOptionsModal({
                     <Label htmlFor={`correct-${option.id}`}>Is Correct?</Label>
                     <Select
                       value={option.isCorrect ? "true" : "false"}
-                      onValueChange={(value) =>
-                        handleUpdateOption(option.id, "isCorrect", value === "true")
-                      }
-                      disabled={isSaving}
+                      readonly={true}
                     >
                       <SelectTrigger id={`correct-${option.id}`}>
                         <SelectValue />
@@ -206,40 +200,6 @@ export function QuestionOptionsModal({
               ))}
             </div>
           )}
-        </div>
-
-        <div className="border-t pt-4 space-y-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleAddOption}
-            className="w-full"
-            disabled={isSaving}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Option
-          </Button>
-
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
-              Close
-            </Button>
-            {hasChanges && (
-              <Button onClick={handleSave} disabled={isSaving}>
-                {isSaving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Changes
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
         </div>
       </DialogContent>
     </Dialog>

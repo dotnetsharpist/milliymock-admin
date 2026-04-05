@@ -23,8 +23,8 @@ import {
 } from "../components/ui/tooltip";
 import { toast } from "sonner";
 import { StandaloneQuestion } from "../data/mockData";
-import { standaloneQuestionService } from "../services/standaloneQuestionService";
-import { standaloneOptionService } from "../services/standaloneOptionService";
+import { questionService } from "../services/questionService";
+import { optionService } from "../services/optionService";
 import { BASE_URL } from "../config/api";
 
 type QuestionType = "MultipleChoice" | "Matching" | "FreeAnswer";
@@ -65,8 +65,8 @@ export function Questions() {
     try {
       setIsLoading(true);
       const response = selectedTestId
-        ? await standaloneQuestionService.getQuestionsByTestId(selectedTestId)
-        : await standaloneQuestionService.getQuestions();
+        ? await questionService.getQuestionsByTestId(selectedTestId)
+        : await questionService.getQuestions();
 
       if (response.success && response.data) {
         setQuestions(response.data);
@@ -105,7 +105,7 @@ export function Questions() {
 
     try {
       setIsDeleting(true);
-      const response = await standaloneQuestionService.deleteQuestion(questionToDelete);
+      const response = await questionService.deleteQuestion(questionToDelete);
 
       if (response.success) {
         setQuestions(questions.filter((q) => q.id !== questionToDelete));
@@ -134,7 +134,7 @@ export function Questions() {
     if (question.type === "MultipleChoice") {
       try {
         setIsLoadingOptions(true);
-        const response = await standaloneOptionService.getOptionsByQuestionId(question.id);
+        const response = await optionService.getOptionsByQuestionId(question.id);
 
         if (response.success && response.data) {
           const options = response.data.map((opt) => {
