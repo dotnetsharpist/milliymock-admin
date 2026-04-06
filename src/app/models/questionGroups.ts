@@ -27,3 +27,14 @@ export interface QuestionGroupFormData {
     title: string;
     image?: File | null;
 }
+
+export interface QuestionGroupQuestionCreate {
+    text: string;
+    type: "Matching" | "FreeAnswer";
+    order: number; // Position within the group
+    score: string;
+    questionGroupId: string;
+    correctOptionId?: string; // Reference to the correct option from the group
+    correctAnswer?: string;
+}
+

@@ -2,6 +2,7 @@ import {apiService, ApiResponse} from "./apiService";
 import {API_ENDPOINTS} from "../config/api";
 import {StandaloneQuestion} from "../data/mockData";
 import {Question, QuestionFormData} from "../models/questions";
+import {QuestionGroupQuestionCreate} from "../models/questionGroups";
 
 
 export const questionService = {
@@ -104,6 +105,28 @@ export const questionService = {
     async deleteQuestion(id: string): Promise<ApiResponse<void>> {
         return await apiService.delete<void>(API_ENDPOINTS.STANDALONE_QUESTION_BY_ID(id));
     },
+
+    async createQuestionGroupQuestion(data: QuestionGroupQuestionCreate): Promise<ApiResponse<QuestionGroupQuestionCreate>> {
+        const formData = new FormData();
+
+        console.log(data)
+
+        formData.append("Order", data.order.toString());
+        formData.append("Score", data.score.toString().replace(",", "."));
+        formData.append("Type", data.type.toString());
+
+        formData.append("Text", data.text);
+
+        if (data.correctAnswer) {
+            formData.append("CorrectAnswer", data.correctAnswer);
+        }
+        if (data.questionGroupId) {
+            formData.append("QuestionGroupId", data.questionGroupId.toString());
+        }
+        console.log(formData)
+
+        return await apiService.upload<QuestionGroupQuestionCreate>(API_ENDPOINTS.STANDALONE_QUESTIONS, formData);
+    }
 };
 
 export default questionService;

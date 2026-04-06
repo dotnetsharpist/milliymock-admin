@@ -21,3 +21,9 @@ export interface UpdateOptionData {
     text: string;
     isCorrect: boolean;
 }
+
+export interface CreateOptionForQuestionGroupData {
+    questionGroupId: number | null;
+    text: string;
+}
+
