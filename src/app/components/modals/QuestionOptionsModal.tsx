@@ -19,6 +19,7 @@ import {
 import { Plus, Trash2, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { optionService } from "../../services/optionService";
+import { MathText } from "../math/MathText";
 
 // Local interface for UI state - includes questionId for component logic
 // NOTE: API responses don't include questionId, we add it locally for UI management
@@ -138,7 +139,12 @@ export function QuestionOptionsModal({
         <DialogHeader>
           <DialogTitle>Question Options</DialogTitle>
           <DialogDescription>
-            Manage options for: <span className="font-medium text-neutral-900">{questionText}</span>
+            <span className="text-neutral-600">Manage options for:</span>
+            <MathText
+              as="span"
+              value={questionText}
+              className="ml-1 font-medium text-neutral-900"
+            />
           </DialogDescription>
         </DialogHeader>
 

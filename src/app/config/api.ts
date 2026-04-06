@@ -3,7 +3,7 @@
  * Single source of truth for all API-related constants
  */
 
-export const BASE_URL = "http://localhost:5227/";
+export const BASE_URL = "http://37.60.255.118:5090/";
 
 // API Endpoints
 export const API_ENDPOINTS = {

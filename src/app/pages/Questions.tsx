@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Plus, Pencil, Trash2, ImageIcon, Loader2 } from "lucide-react";
@@ -23,26 +24,47 @@ import {
 } from "../components/ui/tooltip";
 import { toast } from "sonner";
 import { StandaloneQuestion } from "../data/mockData";
+import { Question as ApiQuestion } from "../models/questions";
 import { questionService } from "../services/questionService";
 import { optionService } from "../services/optionService";
 import { BASE_URL } from "../config/api";
+import { MathText } from "../components/math/MathText";
 
 type QuestionType = "MultipleChoice" | "Matching" | "FreeAnswer";
+type QuestionListItem = StandaloneQuestion & {
+  correctAnswer?: string | null;
+  score?: number | null;
+};
 
 interface QuestionOption {
-  id: number;
-  questionId: number | null;
+  id: string;
+  questionId: string | null;
   questionGroupId: number | null;
   text: string;
   isCorrect: boolean;
 }
 
+const normalizeQuestion = (question: ApiQuestion): QuestionListItem => ({
+  id: String(question.id),
+  testId: String(question.testId),
+  text: question.text ?? "",
+  imagePath: question.imagePath ?? undefined,
+  type:
+    question.type === "Matching" ? "MultipleChoice" : question.type,
+  order: question.order,
+  createdAt: "",
+  correctAnswer: question.correctAnswer,
+  score: question.score,
+});
+
 export function Questions() {
-  const [questions, setQuestions] = useState<StandaloneQuestion[]>([]);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [questions, setQuestions] = useState<QuestionListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<StandaloneQuestion | undefined>();
-  const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
+  const selectedTestId = searchParams.get("testId");
 
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
   const [optionsModalQuestion, setOptionsModalQuestion] = useState<{
@@ -69,7 +91,7 @@ export function Questions() {
         : await questionService.getQuestions();
 
       if (response.success && response.data) {
-        setQuestions(response.data);
+        setQuestions(response.data.map(normalizeQuestion));
       } else {
         toast.error("Failed to load questions");
         setQuestions([]);
@@ -84,8 +106,10 @@ export function Questions() {
   };
 
   const handleCreate = () => {
-    setSelectedQuestion(undefined);
-    setIsModalOpen(true);
+    const nextHref = selectedTestId
+      ? `/questions/new?testId=${selectedTestId}`
+      : "/questions/new";
+    navigate(nextHref);
   };
 
   const handleEdit = (e: React.MouseEvent, question: StandaloneQuestion) => {
@@ -130,6 +154,18 @@ export function Questions() {
     setIsModalOpen(false);
   };
 
+  const handleTestChange = (testId: string | null) => {
+    const nextParams = new URLSearchParams(searchParams);
+
+    if (testId) {
+      nextParams.set("testId", testId);
+    } else {
+      nextParams.delete("testId");
+    }
+
+    setSearchParams(nextParams, { replace: true });
+  };
+
   const handleRowClick = async (question: StandaloneQuestion) => {
     if (question.type === "MultipleChoice") {
       try {
@@ -143,7 +179,7 @@ export function Questions() {
             const questionIdNum = question.id;
 
             return {
-              id: optionId,
+              id: String(optionId),
               questionId: questionIdNum,
               questionGroupId: null,
               text: opt.text,
@@ -212,7 +248,7 @@ export function Questions() {
   };
 
   const filteredQuestions = selectedTestId
-    ? questions.filter((q) => q.testId === selectedTestId)
+    ? questions.filter((q) => String(q.testId) === selectedTestId)
     : questions;
 
   if (isLoading) {
@@ -233,7 +269,7 @@ export function Questions() {
 
         <TestFilter
           selectedTestId={selectedTestId}
-          onTestChange={setSelectedTestId}
+          onTestChange={handleTestChange}
         />
 
         <div className="border border-neutral-200 rounded-lg overflow-hidden bg-white">
@@ -265,7 +301,7 @@ export function Questions() {
 
       <TestFilter
         selectedTestId={selectedTestId}
-        onTestChange={setSelectedTestId}
+        onTestChange={handleTestChange}
       />
 
       <div className="border border-neutral-200 rounded-lg overflow-hidden bg-white">
@@ -336,9 +372,10 @@ export function Questions() {
                             )}
                           </td>
                           <td className="px-6 py-4 text-sm">
-                            <div className="max-w-md truncate text-neutral-900">
-                              {question.text}
-                            </div>
+                            <MathText
+                              value={question.text}
+                              className="max-w-md truncate text-neutral-900"
+                            />
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             {getTypeBadge(question.type as QuestionType)}
