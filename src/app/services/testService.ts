@@ -29,7 +29,7 @@ export const testService = {
    * Get test by ID
    */
   async getTestById(id: string): Promise<ApiResponse<Test>> {
-    return await apiService.get<Test>(API_ENDPOINTS.TEST_BY_ID(id));
+    return await apiService.get<Test>(API_ENDPOINTS.GET_TEST_BY_ID(id));
   },
 
   /**

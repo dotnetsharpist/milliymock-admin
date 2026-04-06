@@ -12,6 +12,12 @@ import {
   Question,
   Option,
 } from "../data/mockData";
+
+
+import { QuestionGroupDetailModel } from "../models/questionGroups";
+import { questionGroupService} from "../services";
+
+
 import { QuestionModal } from "../components/modals/QuestionModal";
 import { OptionModal } from "../components/modals/OptionModal";
 import { toast } from "sonner";
@@ -22,26 +28,40 @@ export function QuestionGroupDetail() {
   const { groupId } = useParams();
   const navigate = useNavigate();
 
-  const group = mockQuestionGroups.find((g) => g.id === groupId);
-  const test = mockTests.find((t) => t.id === group?.testId);
-
-  const [questions, setQuestions] = useState<Question[]>(
-    mockQuestions.filter((q) => q.questionGroupId === groupId)
-  );
-  const [options, setOptions] = useState<Option[]>(
-    mockOptions.filter((o) => o.questionGroupId === groupId)
-  );
+  const [group, setGroup] = useState<QuestionGroupDetailModel | null>(null);
+  const [questions, setQuestions] = useState<Question[]> ([]);
+  const [options, setOptions] = useState<Option[]>([]);
 
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
   const [isOptionModalOpen, setIsOptionModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | undefined>();
   const [editingOption, setEditingOption] = useState<Option | undefined>();
 
-  // Helper function to get the full image URL from imagePath
+    useEffect(() => {
+        if (!groupId) return;
+
+        (async () => {
+            try {
+                const res = await questionGroupService.getQuestionGroupById(groupId);
+
+                if (!res.success || !res.data) return;
+
+                const data = res.data;
+
+                setGroup(data);
+                setQuestions(data.questions ?? []);
+                setOptions(data.options ?? []);
+            } catch (err) {
+                console.error(err);
+            }
+        })();
+    }, [groupId]);
+
+    // Helper function to get the full image URL from imagePath
   const getImageUrl = (imagePath: string | undefined) => {
     if (!imagePath) return undefined;
     // Remove leading slash if present to avoid double slashes
-    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+    const cleanPath = imagePath;
     return `${BASE_URL}${cleanPath}`;
   };
 
@@ -211,7 +231,7 @@ export function QuestionGroupDetail() {
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <h1 className="text-3xl font-semibold text-neutral-900">{group.title}</h1>
-            <p className="text-neutral-600 mt-1">Test: {test?.title || "Unknown"}</p>
+            <p className="text-neutral-600 mt-1"> "Unknown" </p>
           </div>
           <div className="ml-6 rounded-lg border border-neutral-200 overflow-hidden bg-neutral-50">
             {group.imagePath ? (

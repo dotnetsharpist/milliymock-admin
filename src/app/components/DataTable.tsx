@@ -137,7 +137,7 @@ export function DataTable<T extends { id: string }>({
                     {columns.map((column, index) => (
                       <td
                         key={index}
-                        className="px-6 py-4 whitespace-nowrap text-sm text-neutral-900"
+                        className="px-6 py-4 whitespace-nowrap text-sm text-neutral-900 max-w-[200px] truncate"
                       >
                         {getCellValue(item, column)}
                       </td>

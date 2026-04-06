@@ -1,6 +1,11 @@
 import { apiService, ApiResponse } from "./apiService";
 import { API_ENDPOINTS } from "../config/api";
-import { QuestionGroup, Question, Option } from "../data/mockData";
+import { Question, Option } from "../data/mockData";
+import {
+    QuestionGroup,
+    QuestionGroupDetailModel,
+    QuestionGroupFormData
+} from "../models/questionGroups"
 
 /**
  * Question Group Service
@@ -53,19 +58,11 @@ export interface UpdateGroupOptionData {
 export const questionGroupService = {
   // ============= QUESTION GROUPS =============
 
-  /**
-   * Get all question groups
-   */
-  async getQuestionGroups(): Promise<ApiResponse<QuestionGroup[]>> {
-    return await apiService.get<QuestionGroup[]>(API_ENDPOINTS.QUESTION_GROUPS);
-  },
-
-  /**
-   * Get question group by ID
-   */
-  async getQuestionGroupById(id: string): Promise<ApiResponse<QuestionGroup>> {
-    return await apiService.get<QuestionGroup>(API_ENDPOINTS.QUESTION_GROUP_BY_ID(id));
-  },
+    async getQuestionGroupById(groupId: string): Promise<ApiResponse<QuestionGroupDetailModel>> {
+        return await apiService.get<QuestionGroupDetailModel[]>(
+            API_ENDPOINTS.QUESTION_GROUP_BY_ID(groupId)
+        );
+    },
 
   /**
    * Get question groups by test ID
@@ -79,7 +76,7 @@ export const questionGroupService = {
   /**
    * Create question group (with optional image upload)
    */
-  async createQuestionGroup(data: CreateQuestionGroupData): Promise<ApiResponse<QuestionGroup>> {
+  async createQuestionGroup(data: QuestionGroupFormData): Promise<ApiResponse<QuestionGroup>> {
     // If image is provided, use multipart/form-data
     if (data.image) {
       const formData = new FormData();
@@ -98,32 +95,6 @@ export const questionGroupService = {
     return await apiService.post<QuestionGroup>(API_ENDPOINTS.QUESTION_GROUPS, jsonData);
   },
 
-  /**
-   * Update question group
-   */
-  async updateQuestionGroup(
-    id: string,
-    data: UpdateQuestionGroupData
-  ): Promise<ApiResponse<QuestionGroup>> {
-    // If image is provided, use multipart/form-data
-    if (data.image) {
-      const formData = new FormData();
-      if (data.title) formData.append("title", data.title);
-      formData.append("image", data.image);
-
-      return await apiService.upload<QuestionGroup>(
-        API_ENDPOINTS.QUESTION_GROUP_BY_ID(id),
-        formData
-      );
-    }
-
-    // Otherwise, use regular JSON
-    const { image, ...jsonData } = data;
-    return await apiService.put<QuestionGroup>(
-      API_ENDPOINTS.QUESTION_GROUP_BY_ID(id),
-      jsonData
-    );
-  },
 
   /**
    * Delete question group
