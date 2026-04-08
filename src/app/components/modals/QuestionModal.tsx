@@ -50,7 +50,7 @@ export function QuestionModal({
                 type: question.type,
                 order: question.order,
                 score: question.score,
-                correctOptionId: question.correctOptionId || "",
+                correctOptionId: question.correctOptionId ? String(question.correctOptionId) : "",
                 correctAnswer: question.correctAnswer || ""
             });
         } else {
@@ -206,7 +206,7 @@ export function QuestionModal({
                                         </div>
                                     ) : (
                                         availableOptions.map((option) => (
-                                            <SelectItem key={option.id} value={option.id}>
+                                            <SelectItem key={option.id} value={String(option.id)}>
                                                 {option.text}
                                             </SelectItem>
                                         ))

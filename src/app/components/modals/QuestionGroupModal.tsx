@@ -4,7 +4,6 @@ import {Button} from "../ui/button";
 import {Input} from "../ui/input";
 import {Label} from "../ui/label";
 import {FileUpload} from "../ui/file-upload";
-import {mockTests} from "../../data/mockData";
 import {QuestionGroup, QuestionGroupFormData} from "../../models/questionGroups";
 import {Test} from "../../models/tests";
 import {testService} from "../../services/testService";
@@ -26,12 +25,17 @@ interface QuestionGroupModalProps {
     group?: QuestionGroup;
 }
 
+interface NormalizedTestOption {
+    id: string;
+    title: string;
+}
+
 export function QuestionGroupModal({isOpen, onClose, onSave, group}: QuestionGroupModalProps) {
     const [formData, setFormData] = useState({
         title: "",
         testId: "",
     });
-    const [tests, setTests] = useState<Test[]>([]);
+    const [tests, setTests] = useState<NormalizedTestOption[]>([]);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
     const [isLoadingTests, setIsLoadingTests] = useState(false);
@@ -49,13 +53,18 @@ export function QuestionGroupModal({isOpen, onClose, onSave, group}: QuestionGro
             const response = await testService.getTests();
 
             if (response.success && response.data) {
-                setTests(response.data);
+                const normalizedTests = response.data.map((test) => ({
+                    id: String(test.id),
+                    title: test.title,
+                }));
+
+                setTests(normalizedTests);
 
                 // Set default testId if creating new question
-                if (response.data.length > 0) {
+                if (!group && normalizedTests.length > 0) {
                     setFormData(prev => ({
                         ...prev,
-                        testId: response.data[0].id
+                        testId: prev.testId || normalizedTests[0].id
                     }));
                 }
             } else {
@@ -82,7 +91,7 @@ export function QuestionGroupModal({isOpen, onClose, onSave, group}: QuestionGro
         if (group) {
             setFormData({
                 title: group.title,
-                testId: group.testId,
+                testId: String(group.testId),
             });
             // Use imagePath from GET response to display the existing image
             setImagePreview(getImageUrl(group.imagePath));
@@ -90,7 +99,7 @@ export function QuestionGroupModal({isOpen, onClose, onSave, group}: QuestionGro
         } else {
             setFormData({
                 title: "",
-                testId: mockTests[0]?.id || "",
+                testId: "",
             });
             setImagePreview(undefined);
             setImageFile(null);

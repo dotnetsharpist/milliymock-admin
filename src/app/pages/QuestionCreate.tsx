@@ -29,8 +29,8 @@ export function QuestionCreate() {
 
         <h1 className="text-3xl font-semibold text-neutral-900">Create Question</h1>
         <p className="mt-1 text-neutral-600">
-          Build the question on its own page so the math keyboard can work without
-          fighting the modal layer.
+          Question text va math formula endi bitta composer ichida ishlaydi,
+          shuning uchun create flow modalga bog‘lanmaydi.
         </p>
       </div>
 
@@ -39,7 +39,7 @@ export function QuestionCreate() {
           defaultTestId={selectedTestId}
           onCancel={() => navigate(backHref)}
           onSuccess={() => navigate(backHref)}
-          enableContentBuilder
+          questionEditorVariant="inline"
         />
       </div>
     </div>
