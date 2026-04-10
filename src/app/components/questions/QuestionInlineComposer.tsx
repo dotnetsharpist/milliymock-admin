@@ -55,7 +55,7 @@ export function QuestionInlineComposer({
 
   const [activeFormulaId, setActiveFormulaId] = useState<string | null>(null);
   const [isMathReady, setIsMathReady] = useState(false);
-  const [isEditorEmpty, setIsEditorEmpty] = useState(!value.trim());
+  const [isEditorEmpty, setIsEditorEmpty] = useState(!(value ?? "").trim());
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [keyboardAnchorRect, setKeyboardAnchorRect] =
     useState<KeyboardAnchorRect | null>(null);
@@ -160,7 +160,7 @@ export function QuestionInlineComposer({
     }
 
     lastSerializedValueRef.current = nextValue;
-    setIsEditorEmpty(!nextValue.trim());
+    setIsEditorEmpty(!(nextValue ?? "").trim());
   };
 
   const findFormulaChip = (formulaId: string) =>

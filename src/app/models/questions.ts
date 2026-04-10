@@ -2,6 +2,8 @@
  * Question Types
  */
 
+import { Translation} from "./translations";
+
 export type QuestionType = 'MultipleChoice' | 'Matching' | 'FreeAnswer';
 export type QuestionTypeForQuestion = 'MultipleChoice' | 'FreeAnswer';
 
@@ -11,10 +13,9 @@ export type QuestionTypeForQuestion = 'MultipleChoice' | 'FreeAnswer';
  */
 export interface Question {
     id: number;
-    text: string | null;
-    imagePath: string | null; // Relative path from backend (READ only)
     order: number;
     score: number;
+    translations: Translation[];
     type: QuestionType;
     testId: number;
     correctAnswer: string | null;
@@ -30,13 +31,15 @@ export interface OptionForQuestion{
  * This model is used when creating or updating questions
  */
 export interface QuestionFormData {
-    Text?: string | null;
-    Image?: File | null; // File upload (WRITE only)
-    Order: number;
-    Score: number;
-    Type: QuestionTypeForQuestion;
-    TestId: number;
-    CorrectAnswer?: string | null;
-    QuestionGroupId?: number | null;
-    Options? : OptionForQuestion[] | null;
+    textUz?: string | null;
+    textRu?: string | null;
+    imageUz?: File | null; // File upload (WRITE only)
+    imageRu?: File | null; // File upload (WRITE only)
+    order: number;
+    score: number;
+    type: QuestionTypeForQuestion;
+    testId: number;
+    correctAnswer?: string | null;
+    questionGroupId?: number | null;
+    options? : OptionForQuestion[] | null;
 }
