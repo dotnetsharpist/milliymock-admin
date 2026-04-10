@@ -4,7 +4,7 @@ import {Button} from "../ui/button";
 import {Input} from "../ui/input";
 import {Label} from "../ui/label";
 import {Textarea} from "../ui/textarea";
-import {Question, Option} from "../../data/mockData";
+import {Option} from "../../data/mockData";
 import {
     Select,
     SelectContent,
@@ -12,6 +12,18 @@ import {
     SelectTrigger,
     SelectValue,
 } from "../ui/select";
+
+export interface Question {
+    id: string;
+    questionGroupId: string;
+    textUz: string;
+    textRu: string;
+    type: "Matching" | "FreeAnswer";
+    order: number; // Position within the group
+    correctOptionId?: string; // Reference to the correct option from the group
+}
+
+
 
 import {QuestionGroupQuestionCreate} from "../../models/questionGroups";
 import { questionService } from "../../services/questionService";
@@ -35,7 +47,8 @@ export function QuestionModal({
                                   availableOptions
                               }: QuestionModalProps) {
     const [formData, setFormData] = useState({
-        text: "",
+        textUz: "",
+        textRu: "",
         type: "Matching" as Question["type"],
         order: 1,
         score: "",
@@ -46,7 +59,8 @@ export function QuestionModal({
     useEffect(() => {
         if (question) {
             setFormData({
-                text: question.text,
+                textUz: question.textUz,
+                textRu: question.textRu,
                 type: question.type,
                 order: question.order,
                 score: question.score,
@@ -55,7 +69,8 @@ export function QuestionModal({
             });
         } else {
             setFormData({
-                text: "",
+                textUz: "",
+                textRu: "",
                 type: "Matching",
                 order: 1,
                 score: "",
@@ -70,7 +85,8 @@ export function QuestionModal({
 
         const newQuestion: QuestionGroupQuestionCreate = {
             questionGroupId: groupId,
-            text: formData.text,
+            textUz: formData.textUz,
+            textRu: formData.textRu,
             type: formData.type,
             order: formData.order,
             score: formData.score,
@@ -175,18 +191,33 @@ export function QuestionModal({
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="text">Question Text</Label>
+                        <Label htmlFor="text">Question Text (UZ)</Label>
                         <Textarea
                             id="text"
-                            value={formData.text}
+                            value={formData.textUz}
                             onChange={(e) =>
-                                setFormData({...formData, text: e.target.value})
+                                setFormData({...formData, textUz: e.target.value})
                             }
                             placeholder="Enter your question..."
                             rows={3}
                             required
                         />
                     </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="text">Question Text (RU)</Label>
+                        <Textarea
+                            id="text"
+                            value={formData.textRu}
+                            onChange={(e) =>
+                                setFormData({...formData, textRu: e.target.value})
+                            }
+                            placeholder="Enter your question..."
+                            rows={3}
+                            required
+                        />
+                    </div>
+
 
 
                     {formData.type === "Matching" && (
@@ -221,7 +252,7 @@ export function QuestionModal({
 
                     {formData.type === "FreeAnswer" && (
                         <div className="space-y-2">
-                            <Label htmlFor="text">Question Text</Label>
+                            <Label htmlFor="text">Question Answer</Label>
                             <Textarea
                                 id="text"
                                 value={formData.correctAnswer}

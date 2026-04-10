@@ -31,6 +31,7 @@ export function QuestionGroups() {
 
             if (response.success && response.data) {
                 setGroups(response.data);
+                console.log(response.data)
             } else {
                 toast.error("Failed to load questions");
                 setGroups([]);
@@ -92,17 +93,20 @@ export function QuestionGroups() {
             header: "Title",
             accessor: (group) => (
                 <div className="flex items-center gap-2">
-                    <span className="font-medium">{group.title}</span>
+                    <span className="font-medium">{group.translations?.[0]?.text ?? "No translation"}</span>
                     <ChevronRight className="w-4 h-4 text-neutral-400"/>
                 </div>
             ),
         },
         {
             header: "Image",
-            accessor: (group) => (
-                group.imagePath ? (
+            accessor: (group) => {
+                // Check if the first translation and its imagePath exist safely
+                const imagePath = group.translations?.[0]?.imagePath;
+
+                return imagePath ? (
                     <img
-                        src={getImageUrl(group.imagePath)}
+                        src={getImageUrl(imagePath)}
                         alt="preview"
                         className="w-10 h-10 object-cover rounded-md border"
                     />
@@ -110,8 +114,8 @@ export function QuestionGroups() {
                     <div className="w-10 h-10 flex items-center justify-center bg-neutral-100 rounded-md text-xs text-neutral-400">
                         N/A
                     </div>
-                )
-            ),
+                );
+            },
         },
         {
             header: "Questions",

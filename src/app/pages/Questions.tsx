@@ -110,7 +110,7 @@ export function Questions() {
       const response = await questionService.deleteQuestion(questionToDelete);
 
       if (response.success) {
-        setQuestions(questions.filter((q) => q.id !== questionToDelete));
+        setQuestions(questions.filter((q) => q.id !== parseInt(questionToDelete)));
         toast.success("Question deleted successfully");
       } else {
         toast.error("Failed to delete question");

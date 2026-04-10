@@ -120,13 +120,15 @@ export const questionService = {
 
     async createQuestionGroupQuestion(data: QuestionGroupQuestionCreate): Promise<ApiResponse<QuestionGroupQuestionCreate>> {
         const formData = new FormData();
+        console.log(data)
 
 
         formData.append("Order", data.order.toString());
         formData.append("Score", data.score.toString().replace(",", "."));
         formData.append("Type", data.type.toString());
 
-        formData.append("Text", data.text);
+        formData.append("TextUz", data.textUz);
+        formData.append("TextRu", data.textRu);
 
         if (data.correctAnswer) {
             formData.append("CorrectAnswer", data.correctAnswer);

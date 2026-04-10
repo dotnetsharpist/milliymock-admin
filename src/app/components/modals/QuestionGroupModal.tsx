@@ -17,7 +17,8 @@ import {
 } from "../ui/select";
 import {BASE_URL} from "../../config/api";
 import {toast} from "sonner";
-
+import {Question} from "../../models/questions";
+import {Option} from "../../models/options";
 interface QuestionGroupModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -31,13 +32,30 @@ interface NormalizedTestOption {
 }
 
 export function QuestionGroupModal({isOpen, onClose, onSave, group}: QuestionGroupModalProps) {
-    const [formData, setFormData] = useState({
-        title: "",
+
+    interface QuestionGroupFormState {
+        id: string;
+        testId: string;
+        textUz: string;
+        textRu: string;
+        ImagePathUz: string;
+        ImagePathRu: string;
+    }
+
+    const [formData, setFormData] = useState<QuestionGroupFormState>({
+        id: "",
         testId: "",
+        textUz: "",
+        textRu: "",
+        ImagePathUz: "",
+        ImagePathRu: "",
     });
+
     const [tests, setTests] = useState<NormalizedTestOption[]>([]);
-    const [imageFile, setImageFile] = useState<File | null>(null);
-    const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
+    const [imageFileUz, setImageFileUz] = useState<File | null>(null);
+    const [imageFileRu, setImageFileRu] = useState<File | null>(null);
+    const [imagePreviewUz, setImagePreviewUz] = useState<string | undefined>(undefined);
+    const [imagePreviewRu, setImagePreviewRu] = useState<string | undefined>(undefined);
     const [isLoadingTests, setIsLoadingTests] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -83,47 +101,81 @@ export function QuestionGroupModal({isOpen, onClose, onSave, group}: QuestionGro
     const getImageUrl = (imagePath: string | undefined) => {
         if (!imagePath) return undefined;
         // Remove leading slash if present to avoid double slashes
-        const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-        return `${BASE_URL}${cleanPath}`;
+        return `${BASE_URL}${imagePath}`;
     };
 
     useEffect(() => {
         if (group) {
+            const uz = group.translations.find((t) => t.language === "Uzbek");
+            const ru = group.translations.find((t) => t.language === "Russian");
+
             setFormData({
-                title: group.title,
-                testId: String(group.testId),
+                id: group.id ?? "",
+                testId: String(group.testId ?? ""),
+                textUz: uz?.text ?? "",
+                textRu: ru?.text ?? "",
+                ImagePathUz: uz?.imagePath ?? "",
+                ImagePathRu: ru?.imagePath ?? "",
             });
-            // Use imagePath from GET response to display the existing image
-            setImagePreview(getImageUrl(group.imagePath));
-            setImageFile(null);
+
+            // previews (for UI)
+            setImagePreviewUz(getImageUrl(uz?.imagePath ?? ""));
+            setImagePreviewRu(getImageUrl(ru?.imagePath ?? ""));
+
+            // reset uploaded files
+            setImageFileUz(null);
+            setImageFileRu(null);
+
         } else {
             setFormData({
-                title: "",
+                id: "",
                 testId: "",
+                textUz: "",
+                textRu: "",
+                ImagePathUz: "",
+                ImagePathRu: "",
             });
-            setImagePreview(undefined);
-            setImageFile(null);
+
+            setImagePreviewUz(undefined);
+            setImagePreviewRu(undefined);
+
+            setImageFileUz(null);
+            setImageFileRu(null);
         }
     }, [group, isOpen]);
 
-    const handleImageChange = (file: File | null) => {
-        setImageFile(file);
+    const handleImageChangeUz = (file: File | null) => {
+        setImageFileUz(file);
         // The FileUpload component handles the preview internally
     };
 
-    const handleImageRemove = () => {
-        setImageFile(null);
-        setImagePreview(undefined);
+    const handleImageChangeRu = (file: File | null) => {
+        setImageFileRu(file);
+        // The FileUpload component handles the preview internally
     };
+
+
+    const handleImageRemoveUz = () => {
+        setImageFileUz(null);
+        setImagePreviewUz(undefined);
+    };
+
+    const handleImageRemoveRu = () => {
+        setImageFileRu(null);
+        setImagePreviewRu(undefined);
+    };
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
 
         const newGroup: QuestionGroupFormData = {
-            title: formData.title,
             testId: formData.testId,
-            image: imageFile
+            textUz: formData.textUz,
+            textRu: formData.textRu,
+            imageUz: imageFileUz,
+            imageRu: imageFileRu,
         };
 
         try {
@@ -177,12 +229,12 @@ export function QuestionGroupModal({isOpen, onClose, onSave, group}: QuestionGro
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="title">Group Title</Label>
+                        <Label htmlFor="title">Group Title (UZ)</Label>
                         <Input
                             id="title"
-                            value={formData.title}
+                            value={formData.textUz}
                             onChange={(e) =>
-                                setFormData({...formData, title: e.target.value})
+                                setFormData({...formData, textUz: e.target.value})
                             }
                             placeholder="e.g., Array Methods Group"
                             required
@@ -190,11 +242,36 @@ export function QuestionGroupModal({isOpen, onClose, onSave, group}: QuestionGro
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Image (optional)</Label>
+                        <Label htmlFor="title">Group Title (RU)</Label>
+                        <Input
+                            id="title"
+                            value={formData.textRu}
+                            onChange={(e) =>
+                                setFormData({...formData, textRu: e.target.value})
+                            }
+                            placeholder="e.g., Array Methods Group"
+                            required
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Image UZ (optional)</Label>
                         <FileUpload
-                            value={imagePreview}
-                            onChange={handleImageChange}
-                            onRemove={handleImageRemove}
+                            value={imagePreviewUz}
+                            onChange={handleImageChangeUz}
+                            onRemove={handleImageRemoveUz}
+                        />
+                        <p className="text-sm text-neutral-600">
+                            Add an image for visual context to help students understand the questions
+                        </p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Image RU (optional)</Label>
+                        <FileUpload
+                            value={imagePreviewRu}
+                            onChange={handleImageChangeRu}
+                            onRemove={handleImageRemoveRu}
                         />
                         <p className="text-sm text-neutral-600">
                             Add an image for visual context to help students understand the questions
