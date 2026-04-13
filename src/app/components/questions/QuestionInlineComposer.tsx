@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { MathfieldElement } from "mathlive";
 import { createPortal } from "react-dom";
-import { Plus } from "lucide-react";
+import { Keyboard } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "../ui/utils";
 import {
@@ -12,7 +12,7 @@ import {
 import { wrapInlineMath } from "../../lib/math";
 import {
   QuestionInlineKeyboard,
-  QuestionInlineKeyboardAction,
+  type QuestionInlineMathHandle,
 } from "./QuestionInlineKeyboard";
 
 interface QuestionInlineComposerProps {
@@ -22,19 +22,8 @@ interface QuestionInlineComposerProps {
   className?: string;
 }
 
-interface KeyboardAnchorRect {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-}
-
 const createFormulaId = () =>
   `formula-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-const KEYBOARD_WIDTH = 300;
-const KEYBOARD_HEIGHT = 360;
-const KEYBOARD_MARGIN = 12;
 
 export function QuestionInlineComposer({
   value,
@@ -46,6 +35,7 @@ export function QuestionInlineComposer({
   const editorRef = useRef<HTMLDivElement | null>(null);
   const keyboardRef = useRef<HTMLDivElement | null>(null);
   const mathFieldRef = useRef<MathfieldElement | null>(null);
+  const mathInputHandleRef = useRef<QuestionInlineMathHandle | null>(null);
   const renderMathRef = useRef<
     ((element: HTMLElement, options?: Record<string, unknown>) => void) | null
   >(null);
@@ -57,42 +47,62 @@ export function QuestionInlineComposer({
   const [isMathReady, setIsMathReady] = useState(false);
   const [isEditorEmpty, setIsEditorEmpty] = useState(!(value ?? "").trim());
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
-  const [keyboardAnchorRect, setKeyboardAnchorRect] =
-    useState<KeyboardAnchorRect | null>(null);
+  const [isFormulaInsertMode, setIsFormulaInsertMode] = useState(false);
+
+  // --- NEW: INLINE SWAPPING HELPERS ---
+
+  const mountMathFieldToChip = (chip: HTMLElement) => {
+    const mathField = mathFieldRef.current;
+    if (!mathField) return;
+
+    // Clear the static formula render
+    chip.innerHTML = "";
+
+    // Move the active MathLive element inside the chip
+    chip.appendChild(mathField);
+
+    // Make the mathField visible and flow inline
+    mathField.style.position = "static";
+    mathField.style.opacity = "1";
+    mathField.style.width = "auto";
+    mathField.style.height = "auto";
+    mathField.style.pointerEvents = "auto";
+  };
+
+  const unmountMathField = (chip: HTMLElement) => {
+    const mathField = mathFieldRef.current;
+    if (!mathField) return;
+
+    // Move math field back to a hidden staging state to protect it
+    mathField.style.position = "fixed";
+    mathField.style.left = "-9999px";
+    mathField.style.opacity = "0";
+    mathField.style.pointerEvents = "none";
+
+    // Append it safely to the root container so it isn't destroyed
+    rootRef.current?.appendChild(mathField);
+
+    // Recreate the static render target
+    chip.innerHTML = "";
+    const renderTarget = document.createElement("span");
+    renderTarget.dataset.formulaRender = "true";
+    chip.appendChild(renderTarget);
+
+    // Re-render the static math
+    renderFormulaChip(chip);
+  };
+
+  // --- END HELPERS ---
 
   const setFormulaSelection = (formulaId: string | null) => {
-    activeFormulaIdRef.current = formulaId;
-    setActiveFormulaId(formulaId);
-  };
-
-  const setKeyboardAnchorFromRect = (rect: DOMRect) => {
-    setKeyboardAnchorRect({
-      left: rect.left,
-      top: rect.top,
-      width: rect.width,
-      height: rect.height,
-    });
-  };
-
-  const getKeyboardPosition = () => {
-    if (!keyboardAnchorRect || typeof window === "undefined") {
-      return null;
+    // Unmount previously active formula
+    if (activeFormulaIdRef.current && activeFormulaIdRef.current !== formulaId) {
+      const prevChip = findFormulaChip(activeFormulaIdRef.current);
+      if (prevChip) unmountMathField(prevChip);
     }
 
-    const width = Math.min(KEYBOARD_WIDTH, window.innerWidth - 16);
-    const left = Math.min(
-      Math.max(8, keyboardAnchorRect.left),
-      Math.max(8, window.innerWidth - width - 8)
-    );
-
-    const preferredTop =
-      keyboardAnchorRect.top + keyboardAnchorRect.height + KEYBOARD_MARGIN;
-    const fitsBelow = preferredTop + KEYBOARD_HEIGHT <= window.innerHeight - 8;
-    const top = fitsBelow
-      ? preferredTop
-      : Math.max(8, keyboardAnchorRect.top - KEYBOARD_HEIGHT - KEYBOARD_MARGIN);
-
-    return { left, top, width };
+    activeFormulaIdRef.current = formulaId;
+    setActiveFormulaId(formulaId);
   };
 
   const hideLibraryKeyboard = () => {
@@ -142,6 +152,15 @@ export function QuestionInlineComposer({
   const hydrateEditor = (nextValue: string) => {
     const editor = editorRef.current;
     if (!editor) return;
+
+    // Rescue math field before clearing the editor
+    if (mathFieldRef.current && editor.contains(mathFieldRef.current)) {
+      rootRef.current?.appendChild(mathFieldRef.current);
+      mathFieldRef.current.style.position = "fixed";
+      mathFieldRef.current.style.left = "-9999px";
+      mathFieldRef.current.style.opacity = "0";
+      mathFieldRef.current.style.pointerEvents = "none";
+    }
 
     editor.innerHTML = "";
 
@@ -263,6 +282,7 @@ export function QuestionInlineComposer({
     if (!chip || !mathField) return;
 
     setFormulaSelection(formulaId);
+    mountMathFieldToChip(chip);
 
     const latex = chip.dataset.latex ?? "";
     if (mathField.value !== latex) {
@@ -277,7 +297,7 @@ export function QuestionInlineComposer({
     hideLibraryKeyboard();
   };
 
-  const insertFormulaChipAtSelection = () => {
+  const insertFormulaChipAtSelection = (initialLatex = "") => {
     const editor = editorRef.current;
     const selection = window.getSelection();
 
@@ -293,7 +313,7 @@ export function QuestionInlineComposer({
     range.deleteContents();
 
     const formulaId = createFormulaId();
-    const chip = createFormulaChip(formulaId, "");
+    const chip = createFormulaChip(formulaId, initialLatex);
     const ghostNode = document.createTextNode(INLINE_EDITOR_GHOST_CHAR);
     const fragment = document.createDocumentFragment();
     fragment.append(chip, ghostNode);
@@ -314,6 +334,15 @@ export function QuestionInlineComposer({
   const removeFormula = (formulaId: string) => {
     const chip = findFormulaChip(formulaId);
     if (!chip) return;
+
+    // Rescue the math-field if we are deleting the currently active formula
+    if (activeFormulaIdRef.current === formulaId && mathFieldRef.current) {
+      rootRef.current?.appendChild(mathFieldRef.current);
+      mathFieldRef.current.style.position = "fixed";
+      mathFieldRef.current.style.left = "-9999px";
+      mathFieldRef.current.style.opacity = "0";
+      mathFieldRef.current.style.pointerEvents = "none";
+    }
 
     const selection = window.getSelection();
     const ghostNode = chip.nextSibling;
@@ -341,7 +370,7 @@ export function QuestionInlineComposer({
 
   const closeKeyboard = () => {
     setIsKeyboardOpen(false);
-    setKeyboardAnchorRect(null);
+    setIsFormulaInsertMode(false);
     hideLibraryKeyboard();
   };
 
@@ -379,8 +408,74 @@ export function QuestionInlineComposer({
     }
 
     chip.dataset.latex = latex;
-    renderFormulaChip(chip);
+    
+    // We do NOT call renderFormulaChip(chip) here because the user is currently editing it
+    // and the chip contains the live math-field, not a static render.
     syncValueFromEditor();
+  };
+
+  const insertMathLatex = (latex: string) => {
+    let mathField = mathFieldRef.current;
+    let formulaId = activeFormulaIdRef.current;
+
+    if (!formulaId) {
+      formulaId = insertFormulaChipAtSelection();
+      mathField = mathFieldRef.current;
+    }
+
+    if (!mathField || !formulaId) return;
+
+    mathField.focus();
+    mathField.insert(latex, {
+      focus: true,
+      format: "latex",
+      mode: "math",
+      selectionMode: "placeholder",
+    });
+    syncSelectedFormulaFromMathField();
+    setIsFormulaInsertMode(false);
+    hideLibraryKeyboard();
+  };
+
+  const executeMathCommand = (command: string) => {
+    switch (command) {
+      case "\\frac":
+        insertMathLatex("\\frac{#@}{#?}");
+        return;
+      case "^":
+        insertMathLatex("#@^{#?}");
+        return;
+      case "_":
+        insertMathLatex("#@_{#?}");
+        return;
+      case "\\sqrt":
+        insertMathLatex("\\sqrt{#?}");
+        return;
+      case "\\nthroot":
+        insertMathLatex("\\sqrt[#?]{#?}");
+        return;
+      default:
+        insertMathLatex(command);
+    }
+  };
+
+  const executeMathKeystroke = (key: string) => {
+    const mathField = mathFieldRef.current;
+    if (!mathField || !activeFormulaIdRef.current) return;
+
+    const commandMap: Record<string, string> = {
+      Left: "moveToPreviousChar",
+      Right: "moveToNextChar",
+      Backspace: "deleteBackward",
+      Tab: "moveToNextPlaceholder",
+    };
+
+    const command = commandMap[key];
+    if (command && typeof mathField.executeCommand === "function") {
+      mathField.executeCommand(command);
+      syncSelectedFormulaFromMathField();
+      hideLibraryKeyboard();
+    }
   };
 
   const insertPlainText = (text: string) => {
@@ -409,7 +504,7 @@ export function QuestionInlineComposer({
     syncValueFromEditor();
   };
 
-  const handleAddFormula = (anchorRect: DOMRect) => {
+  const handleAddFormula = () => {
     if (disabled || !isMathReady) return;
 
     const emptyChips = getEmptyFormulaChips();
@@ -418,70 +513,20 @@ export function QuestionInlineComposer({
       const existingFormulaId = existingChip.dataset.formulaId ?? "";
 
       cleanupExtraEmptyFormulaChips(existingFormulaId);
-      handleOpenFormulaFromChip(
-        existingFormulaId,
-        existingChip.getBoundingClientRect()
-      );
+      handleOpenFormulaFromChip(existingFormulaId);
       return;
     }
 
-    const formulaId = insertFormulaChipAtSelection();
-    if (!formulaId) return;
-
-    const createdChip = findFormulaChip(formulaId);
-    setKeyboardAnchorFromRect(
-      createdChip?.getBoundingClientRect() ?? anchorRect
-    );
+    setFormulaSelection(null);
+    setIsFormulaInsertMode(true);
     setIsKeyboardOpen(true);
   };
 
-  const handleOpenFormulaFromChip = (formulaId: string, rect: DOMRect) => {
+  const handleOpenFormulaFromChip = (formulaId: string) => {
     cleanupExtraEmptyFormulaChips(formulaId);
     focusFormula(formulaId);
-    setKeyboardAnchorFromRect(rect);
+    setIsFormulaInsertMode(false);
     setIsKeyboardOpen(true);
-  };
-
-  const handleKeyboardAction = (action: QuestionInlineKeyboardAction) => {
-    const mathField = mathFieldRef.current;
-    const formulaId = activeFormulaIdRef.current;
-
-    if (action.type === "done") {
-      dismissKeyboard();
-      return;
-    }
-
-    if (disabled || !isMathReady || !mathField || !formulaId) return;
-
-    if (action.type === "clear") {
-      removeFormula(formulaId);
-      closeKeyboard();
-      return;
-    }
-
-    if (action.type === "backspace") {
-      if (typeof mathField.executeCommand === "function") {
-        mathField.executeCommand("deleteBackward");
-      } else {
-        mathField.setValue(mathField.value.slice(0, -1));
-      }
-
-      syncSelectedFormulaFromMathField();
-
-      if (!activeFormulaIdRef.current) {
-        closeKeyboard();
-      }
-      return;
-    }
-
-    mathField.insert(action.value, {
-      focus: true,
-      format: "latex",
-      mode: "math",
-      selectionMode: "placeholder",
-    });
-    syncSelectedFormulaFromMathField();
-    hideLibraryKeyboard();
   };
 
   useEffect(() => {
@@ -543,47 +588,6 @@ export function QuestionInlineComposer({
   }, [disabled, isMathReady]);
 
   useEffect(() => {
-    if (!isKeyboardOpen) return;
-
-    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
-      const target = event.target as Node | null;
-      if (!target) return;
-
-      if (keyboardRef.current?.contains(target)) {
-        return;
-      }
-
-      if (rootRef.current?.contains(target)) {
-        return;
-      }
-
-      dismissKeyboard();
-    };
-
-    const handleViewportResize = () => {
-      dismissKeyboard();
-    };
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        dismissKeyboard();
-      }
-    };
-
-    window.addEventListener("mousedown", handlePointerDown);
-    window.addEventListener("touchstart", handlePointerDown);
-    window.addEventListener("resize", handleViewportResize);
-    window.addEventListener("keydown", handleEscape);
-
-    return () => {
-      window.removeEventListener("mousedown", handlePointerDown);
-      window.removeEventListener("touchstart", handlePointerDown);
-      window.removeEventListener("resize", handleViewportResize);
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, [isKeyboardOpen]);
-
-  useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;
 
@@ -597,10 +601,35 @@ export function QuestionInlineComposer({
       });
   }, [activeFormulaId, value]);
 
-  const keyboardPosition = getKeyboardPosition();
+  mathInputHandleRef.current = {
+    cmd: (latexCmd) => {
+      executeMathCommand(latexCmd);
+    },
+    write: (latex) => {
+      insertMathLatex(latex);
+    },
+    typedText: (text) => {
+      insertMathLatex(text);
+    },
+    keystroke: (key) => {
+      executeMathKeystroke(key);
+    },
+    focus: () => {
+      mathFieldRef.current?.focus();
+      hideLibraryKeyboard();
+    },
+    getLatex: () => mathFieldRef.current?.value ?? "",
+  };
 
   return (
-    <div ref={rootRef} className={cn("space-y-4", className)}>
+    <div
+      ref={rootRef}
+      className={cn(
+        "space-y-4",
+        isKeyboardOpen && "pb-[42rem] lg:pb-[19rem]",
+        className
+      )}
+    >
       <div className="rounded-[2rem] border border-[#ecd8c1] bg-[linear-gradient(160deg,rgba(255,250,245,0.98),rgba(255,255,255,0.98))] p-4 shadow-[0_26px_70px_-52px_rgba(120,53,15,0.55)]">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="space-y-1">
@@ -614,22 +643,16 @@ export function QuestionInlineComposer({
           </div>
 
           <div className="flex items-center gap-2">
-            {activeFormulaId && (
-              <span className="inline-flex rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-orange-700">
-                Formula Selected
-              </span>
-            )}
             <Button
               type="button"
               variant="outline"
-              size="sm"
-              onClick={(event) =>
-                handleAddFormula(event.currentTarget.getBoundingClientRect())
-              }
+              size="icon"
+              onClick={handleAddFormula}
               disabled={disabled || !isMathReady}
+              title="Open formula keyboard"
+              aria-label="Open formula keyboard"
             >
-              <Plus className="h-4 w-4" />
-              Add Formula
+              <Keyboard className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -676,16 +699,15 @@ export function QuestionInlineComposer({
               const target = event.target as HTMLElement;
               const formulaChip = target.closest<HTMLElement>("[data-formula-id]");
 
+              // Handle clicking outside a formula chip
               if (!formulaChip) {
-                dismissKeyboard();
+                setFormulaSelection(null);
+                closeKeyboard();
                 return;
               }
 
               event.preventDefault();
-              handleOpenFormulaFromChip(
-                formulaChip.dataset.formulaId ?? "",
-                formulaChip.getBoundingClientRect()
-              );
+              handleOpenFormulaFromChip(formulaChip.dataset.formulaId ?? "");
             }}
           />
 
@@ -698,34 +720,24 @@ export function QuestionInlineComposer({
             style={{
               position: "fixed",
               left: "-9999px",
-              top: "-9999px",
-              width: "1px",
-              height: "1px",
               opacity: 0,
-              overflow: "hidden",
+              pointerEvents: "none"
             }}
           />
         </div>
       </div>
 
       {isKeyboardOpen &&
-        keyboardPosition &&
         createPortal(
           <div
             ref={keyboardRef}
-            style={{
-              position: "fixed",
-              left: keyboardPosition.left,
-              top: keyboardPosition.top,
-              width: keyboardPosition.width,
-              zIndex: 60,
-            }}
-            className="rounded-sm border border-[#e0ddd7] bg-[#f5f3ef] p-4 shadow-sm"
+            className="fixed bottom-0 left-0 right-0 z-[70]"
           >
-          <QuestionInlineKeyboard
-            disabled={disabled || !isMathReady || !activeFormulaId}
-            onAction={handleKeyboardAction}
-          />
+            <QuestionInlineKeyboard
+              mathInputRef={mathInputHandleRef}
+              isVisible={isKeyboardOpen && !disabled}
+              onClose={dismissKeyboard}
+            />
           </div>,
           document.body
         )}
