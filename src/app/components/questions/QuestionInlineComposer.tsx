@@ -32,7 +32,7 @@ interface KeyboardAnchorRect {
 const createFormulaId = () =>
   `formula-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-const KEYBOARD_WIDTH = 420;
+const KEYBOARD_WIDTH = 300;
 const KEYBOARD_HEIGHT = 360;
 const KEYBOARD_MARGIN = 12;
 
@@ -168,6 +168,42 @@ export function QuestionInlineComposer({
       `[data-formula-id="${formulaId}"]`
     ) ?? null;
 
+  const getEmptyFormulaChips = () =>
+    Array.from(
+      editorRef.current?.querySelectorAll<HTMLElement>("[data-formula-id]") ?? []
+    ).filter((chip) => !(chip.dataset.latex ?? "").trim());
+
+  const removeFormulaChipNode = (chip: HTMLElement) => {
+    const ghostNode = chip.nextSibling;
+    chip.remove();
+
+    if (
+      ghostNode &&
+      ghostNode.nodeType === Node.TEXT_NODE &&
+      ghostNode.textContent === INLINE_EDITOR_GHOST_CHAR
+    ) {
+      ghostNode.remove();
+    }
+  };
+
+  const cleanupExtraEmptyFormulaChips = (preserveFormulaId?: string | null) => {
+    const emptyChips = getEmptyFormulaChips().filter(
+      (chip) => chip.dataset.formulaId !== preserveFormulaId
+    );
+
+    if (emptyChips.length === 0) return;
+
+    emptyChips.forEach((chip) => {
+      removeFormulaChipNode(chip);
+    });
+
+    if (editorRef.current && !editorRef.current.childNodes.length) {
+      editorRef.current.appendChild(document.createTextNode(""));
+    }
+
+    syncValueFromEditor();
+  };
+
   const captureEditorSelection = () => {
     const editor = editorRef.current;
     const selection = window.getSelection();
@@ -269,6 +305,7 @@ export function QuestionInlineComposer({
     selection.removeAllRanges();
     selection.addRange(nextRange);
     selectionRef.current = nextRange.cloneRange();
+    setIsEditorEmpty(false);
 
     focusFormula(formulaId);
     return formulaId;
@@ -323,6 +360,7 @@ export function QuestionInlineComposer({
       return;
     }
 
+    cleanupExtraEmptyFormulaChips();
     setFormulaSelection(null);
   };
 
@@ -374,14 +412,31 @@ export function QuestionInlineComposer({
   const handleAddFormula = (anchorRect: DOMRect) => {
     if (disabled || !isMathReady) return;
 
+    const emptyChips = getEmptyFormulaChips();
+    if (emptyChips.length > 0) {
+      const existingChip = emptyChips[0];
+      const existingFormulaId = existingChip.dataset.formulaId ?? "";
+
+      cleanupExtraEmptyFormulaChips(existingFormulaId);
+      handleOpenFormulaFromChip(
+        existingFormulaId,
+        existingChip.getBoundingClientRect()
+      );
+      return;
+    }
+
     const formulaId = insertFormulaChipAtSelection();
     if (!formulaId) return;
 
-    setKeyboardAnchorFromRect(anchorRect);
+    const createdChip = findFormulaChip(formulaId);
+    setKeyboardAnchorFromRect(
+      createdChip?.getBoundingClientRect() ?? anchorRect
+    );
     setIsKeyboardOpen(true);
   };
 
   const handleOpenFormulaFromChip = (formulaId: string, rect: DOMRect) => {
+    cleanupExtraEmptyFormulaChips(formulaId);
     focusFormula(formulaId);
     setKeyboardAnchorFromRect(rect);
     setIsKeyboardOpen(true);
@@ -390,6 +445,11 @@ export function QuestionInlineComposer({
   const handleKeyboardAction = (action: QuestionInlineKeyboardAction) => {
     const mathField = mathFieldRef.current;
     const formulaId = activeFormulaIdRef.current;
+
+    if (action.type === "done") {
+      dismissKeyboard();
+      return;
+    }
 
     if (disabled || !isMathReady || !mathField || !formulaId) return;
 
@@ -660,7 +720,7 @@ export function QuestionInlineComposer({
               width: keyboardPosition.width,
               zIndex: 60,
             }}
-            className="rounded-[1.6rem] border border-[#ead9c6] bg-[linear-gradient(180deg,rgba(255,252,247,0.99),rgba(255,255,255,0.98))] p-3.5 shadow-[0_28px_70px_-42px_rgba(120,53,15,0.48)]"
+            className="rounded-sm border border-[#e0ddd7] bg-[#f5f3ef] p-4 shadow-sm"
           >
           <QuestionInlineKeyboard
             disabled={disabled || !isMathReady || !activeFormulaId}

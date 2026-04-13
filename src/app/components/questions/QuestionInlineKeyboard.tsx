@@ -10,6 +10,9 @@ export type QuestionInlineKeyboardAction =
     }
   | {
       type: "clear";
+    }
+  | {
+      type: "done";
     };
 
 interface QuestionInlineKeyboardProps {
@@ -21,7 +24,7 @@ interface KeyboardKey {
   label: string;
   action: QuestionInlineKeyboardAction;
   span?: number;
-  tone?: "default" | "danger";
+  tone?: "default" | "danger" | "primary";
 }
 
 const KEYBOARD_ROWS: KeyboardKey[][] = [
@@ -37,6 +40,7 @@ const KEYBOARD_ROWS: KeyboardKey[][] = [
     { label: "5", action: { type: "insert", value: "5" } },
     { label: "6", action: { type: "insert", value: "6" } },
     { label: "×", action: { type: "insert", value: "\\times" } },
+    { label: "ⁿ√", action: { type: "insert", value: "\\sqrt[#?]{#?}" } },
   ],
   [
     { label: "7", action: { type: "insert", value: "7" } },
@@ -53,8 +57,12 @@ const KEYBOARD_ROWS: KeyboardKey[][] = [
   ],
   [
     { label: "π", action: { type: "insert", value: "\\pi" } },
+    { label: ",", action: { type: "insert", value: "," } },
     { label: "⌫", action: { type: "backspace" } },
     { label: "C", action: { type: "clear" }, tone: "danger", span: 2 },
+  ],
+  [
+    { label: "TAYYOR", action: { type: "done" }, tone: "primary", span: 5 },
   ],
 ];
 
@@ -63,11 +71,11 @@ export function QuestionInlineKeyboard({
   onAction,
 }: QuestionInlineKeyboardProps) {
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-2">
       {KEYBOARD_ROWS.map((row, rowIndex) => (
         <div
           key={rowIndex}
-          className="grid grid-cols-5 gap-2.5"
+          className="grid grid-cols-5 gap-2"
         >
           {row.map((key, keyIndex) => (
             <button
@@ -77,9 +85,12 @@ export function QuestionInlineKeyboard({
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => onAction(key.action)}
               className={cn(
-                "flex h-13 items-center justify-center rounded-[1.05rem] border border-[#dccdbb] bg-white text-lg font-medium text-neutral-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_10px_24px_-24px_rgba(120,53,15,0.42)] hover:border-[#ccb9a3] disabled:cursor-not-allowed disabled:opacity-45",
+                "flex h-10 items-center justify-center rounded-sm border border-[#e0ddd7] bg-white px-2 text-sm font-medium text-[#1a1814] shadow-sm transition-all active:scale-95 hover:border-[#1a1814] hover:bg-[#e0ddd7] disabled:cursor-not-allowed disabled:opacity-45",
                 key.span === 2 && "col-span-2",
-                key.tone === "danger" && "text-red-600"
+                key.span === 5 && "col-span-5",
+                key.tone === "danger" && "text-red-600",
+                key.tone === "primary" &&
+                  "border-[#1a1814] bg-[#1a1814] text-white hover:bg-black hover:border-black"
               )}
             >
               {key.label}
