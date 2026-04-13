@@ -13,10 +13,6 @@ export { default as testService } from "./testService";
 export type { CreateTestData, UpdateTestData } from "./testService";
 
 export { default as standaloneQuestionService } from "./questionService";
-export type {
-  CreateStandaloneQuestionData,
-  UpdateStandaloneQuestionData,
-} from "./questionService";
 
 export { default as standaloneOptionService } from "./optionService";
 export type {
@@ -25,14 +21,6 @@ export type {
 } from "./optionService";
 
 export { default as questionGroupService } from "./questionGroupService";
-export type {
-  CreateQuestionGroupData,
-  UpdateQuestionGroupData,
-  CreateGroupQuestionData,
-  UpdateGroupQuestionData,
-  CreateGroupOptionData,
-  UpdateGroupOptionData,
-} from "./questionGroupService";
 
 export { default as userService } from "./userService";
 export type { CreateUserData, UpdateUserData } from "./userService";

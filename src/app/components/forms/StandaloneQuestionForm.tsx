@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+
 import { CheckCircle, Loader2, Plus, Trash2 } from "lucide-react";
 import { questionService } from "../../services/questionService";
 import { optionService } from "../../services/optionService";
@@ -26,8 +27,10 @@ import { QuestionInlineComposer } from "../questions/QuestionInlineComposer";
 export interface StandaloneQuestionFormQuestion {
   id: string;
   testId: string;
-  text: string | null;
-  imagePath?: string | null;
+  textUz: string | null;
+  textRu: string | null;
+  imagePathUz?: string | null;
+  imagePathRu?: string | null;
   type: QuestionTypeForQuestion;
   order: number;
   score?: number | null;
@@ -35,13 +38,16 @@ export interface StandaloneQuestionFormQuestion {
 }
 
 interface StandaloneQuestionFormState {
-  testId: string;
-  text: string;
-  imagePath: string;
-  correctAnswer: string;
-  score: number | "";
-  type: QuestionTypeForQuestion;
-  order: number | "";
+    id: string;
+    testId: string;
+    textUz: string | null;
+    textRu: string | null;
+    imagePathUz?: string | null;
+    imagePathRu?: string | null;
+    type: QuestionTypeForQuestion;
+    order: number;
+    score?: number | null;
+    correctAnswer?: string | null;
 }
 
 interface NormalizedTestOption {
@@ -67,11 +73,13 @@ export function StandaloneQuestionForm({
   questionEditorVariant = "basic",
 }: StandaloneQuestionFormProps) {
   const [formData, setFormData] = useState<StandaloneQuestionFormState>({
+    id: "",
     testId: "",
-    text: "",
-    imagePath: "",
-    correctAnswer: "",
-    score: "",
+    textUz: "",
+    textRu: "",
+    imagePathUz: "",
+    imagePathRu: "",
+    score: 0,
     type: "MultipleChoice",
     order: 1,
   });
@@ -80,11 +88,14 @@ export function StandaloneQuestionForm({
   const [options, setOptions] = useState<
     Array<{ id: string; text: string; isCorrect: boolean }>
   >([]);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFileUz, setImageFileUz] = useState<File | null>(null);
+  const [imageFileRu, setImageFileRu] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | undefined>();
+  const [imagePreviewRu, setImagePreviewRu] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
-  const [mathExpression, setMathExpression] = useState("");
+  const [mathExpressionUz, setMathExpressionUz] = useState("");
+  const [mathExpressionRu, setMathExpressionRu] = useState("");
   const questionTextRef = useRef<HTMLTextAreaElement | null>(null);
 
   const isInlineEditor = questionEditorVariant === "inline";
@@ -101,17 +112,24 @@ export function StandaloneQuestionForm({
   useEffect(() => {
     if (question) {
       setFormData({
+        id: question.id,
         testId: String(question.testId),
-        text: question.text ?? "",
-        imagePath: question.imagePath ?? "",
+        textUz: question.textUz ?? "",
+        textRu: question.textRu ?? "",
+        imagePathUz: question.imagePathUz ?? "",
+        imagePathRu: question.imagePathRu ?? "",
         type: question.type,
         order: question.order,
         correctAnswer: question.correctAnswer ?? "",
-        score: question.score ?? "",
+        score: question.score ?? 0,
       });
-      setMathExpression(extractFirstMathExpression(question.text));
-      setImagePreview(getImageUrl(question.imagePath));
-      setImageFile(null);
+
+      setMathExpressionUz(extractFirstMathExpression(question.textUz));
+      setMathExpressionRu(extractFirstMathExpression(question.textRu));
+      setImagePreview(getImageUrl(question.imagePathUz));
+      setImagePreview(getImageUrl(question.imagePathRu));
+      setImageFileUz(null);
+      setImageFileRu(null);
 
       if (question.type === "MultipleChoice") {
         void loadOptions(question.id);
@@ -123,17 +141,21 @@ export function StandaloneQuestionForm({
 
     setFormData((prev) => ({
       ...prev,
-      text: "",
-      imagePath: "",
-      type: "MultipleChoice",
-      order: 1,
+      textUz: "",
+      textRu: "",
+      imagePathUz: "",
+      imagePathRu: "",
+        type: "MultipleChoice",
+        order: 1,
       correctAnswer: "",
-      score: "",
+      score: 0,
     }));
     setOptions([]);
     setImagePreview(undefined);
-    setImageFile(null);
-    setMathExpression("");
+    setImageFileUz(null);
+    setImageFileRu(undefined);
+    setMathExpressionUz("");
+    setMathExpressionRu("");
   }, [question]);
 
   const fetchTests = async () => {
@@ -196,16 +218,25 @@ export function StandaloneQuestionForm({
     }
   };
 
-  const handleImageChange = (file: File | null) => {
-    setImageFile(file);
+  const handleImageChangeUz = (file: File | null) => {
+    setImageFileUz(file);
+  };
+  const handleImageChangeRu = (file: File | null) => {
+        setImageFileRu(file);
   };
 
-  const handleImageRemove = () => {
-    setImageFile(null);
+
+    const handleImageRemoveUz = () => {
+    setImageFileUz(null);
     setImagePreview(undefined);
   };
+    const handleImageRemoveRu = () => {
+        setImageFileRu(null);
+        setImagePreview(undefined);
+    };
 
-  const handleAddOption = () => {
+
+    const handleAddOption = () => {
     setOptions((prev) => [
       ...prev,
       { id: `temp-${Date.now()}`, text: "", isCorrect: false },
@@ -233,33 +264,33 @@ export function StandaloneQuestionForm({
     );
   };
 
-  const handleInsertMathIntoQuestion = () => {
-    if (!mathExpression.trim()) {
+  const handleInsertMathIntoQuestionUz = () => {
+    if (!mathExpressionUz.trim()) {
       toast.error("Please write a math formula first");
       return;
     }
 
-    const mathToken = `\\(${mathExpression.trim()}\\)`;
+    const mathToken = `\\(${mathExpressionUz.trim()}\\)`;
     const textarea = questionTextRef.current;
 
     if (!textarea) {
       setFormData((prev) => ({
         ...prev,
-        text: prev.text ? `${prev.text} ${mathToken}` : mathToken,
+        textUz: prev.textUz ? `${prev.textUz} ${mathToken}` : mathToken,
       }));
       return;
     }
 
-    const selectionStart = textarea.selectionStart ?? formData.text.length;
-    const selectionEnd = textarea.selectionEnd ?? formData.text.length;
-    const nextText = `${formData.text.slice(
+    const selectionStart = textarea.selectionStart ?? formData.textUz.length;
+    const selectionEnd = textarea.selectionEnd ?? formData.textUz.length;
+    const nextText = `${formData.textUz.slice(
       0,
       selectionStart
-    )}${mathToken}${formData.text.slice(selectionEnd)}`;
+    )}${mathToken}${formData.textUz.slice(selectionEnd)}`;
 
     setFormData((prev) => ({
       ...prev,
-      text: nextText,
+      textUz: nextText,
     }));
 
     window.requestAnimationFrame(() => {
@@ -269,7 +300,44 @@ export function StandaloneQuestionForm({
     });
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+    const handleInsertMathIntoQuestionRu = () => {
+        if (!mathExpressionRu.trim()) {
+            toast.error("Please write a math formula first");
+            return;
+        }
+
+        const mathToken = `\\(${mathExpressionRu.trim()}\\)`;
+        const textarea = questionTextRef.current;
+
+        if (!textarea) {
+            setFormData((prev) => ({
+                ...prev,
+                textRu: prev.textRu ? `${prev.textRu} ${mathToken}` : mathToken,
+            }));
+            return;
+        }
+
+        const selectionStart = textarea.selectionStart ?? formData.textRu.length;
+        const selectionEnd = textarea.selectionEnd ?? formData.textRu.length;
+        const nextText = `${formData.textRu.slice(
+            0,
+            selectionStart
+        )}${mathToken}${formData.textRu.slice(selectionEnd)}`;
+
+        setFormData((prev) => ({
+            ...prev,
+            textRu: nextText,
+        }));
+
+        window.requestAnimationFrame(() => {
+            const cursorPosition = selectionStart + mathToken.length;
+            textarea.focus();
+            textarea.setSelectionRange(cursorPosition, cursorPosition);
+        });
+    };
+
+
+    const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
     if (!formData.testId) {
@@ -282,19 +350,19 @@ export function StandaloneQuestionForm({
       return;
     }
 
-    if (!formData.text.trim()) {
+    /*if (!formData.text.trim()) {
       toast.error("Please enter the question text");
       return;
-    }
+    }*/
 
-    if (
+    /*if (
       !isInlineEditor &&
       mathExpression.trim() &&
-      !hasInlineMath(formData.text, mathExpression)
+      !hasInlineMath(formData.textUz, mathExpression)
     ) {
       toast.error("Insert the formula into question text before saving");
       return;
-    }
+    }*/
 
     if (formData.type === "MultipleChoice") {
       if (options.length === 0) {
@@ -313,13 +381,15 @@ export function StandaloneQuestionForm({
 
       if (question) {
         const response = await questionService.updateQuestion(question.id, {
-          TestId: formData.testId,
-          Text: formData.text,
-          Type: formData.type,
-          Order: formData.order,
-          Score: formData.score,
-          CorrectAnswer: formData.correctAnswer,
-          Image: imageFile || undefined,
+          testId: parseInt(question.testId),
+          textUz: formData.textUz,
+          textRu: formData.textRu,
+          type: formData.type,
+          order: formData.order,
+          score: formData.score,
+          correctAnswer: formData.correctAnswer,
+          imageUz: imageFileUz || undefined,
+          imageRu: imageFileRu || undefined
         });
 
         if (response.success && response.data) {
@@ -330,14 +400,16 @@ export function StandaloneQuestionForm({
         }
       } else {
         const response = await questionService.createQuestion({
-          TestId: formData.testId,
-          Text: formData.text,
-          Type: formData.type,
-          Score: formData.score,
-          Order: formData.order,
-          CorrectAnswer: formData.correctAnswer,
-          Image: imageFile || undefined,
-          Options: options,
+          testId: parseInt(formData.testId),
+          textUz: formData.textUz,
+          textRu: formData.textRu,
+          imageUz: imageFileUz,
+          imageRu: imageFileRu,
+          type: formData.type,
+          score: formData.score,
+          order: formData.order,
+          correctAnswer: formData.correctAnswer,
+          options: options,
         });
 
         if (response.success && response.data) {
@@ -449,22 +521,32 @@ export function StandaloneQuestionForm({
       </div>
 
       <div className="space-y-2">
-        <Label>Image (optional)</Label>
+        <Label>Image UZ (optional)</Label>
         <FileUpload
           value={imagePreview}
-          onChange={handleImageChange}
-          onRemove={handleImageRemove}
+          onChange={handleImageChangeUz}
+          onRemove={handleImageRemoveUz}
           disabled={isSubmitting}
         />
       </div>
-
-      {isInlineEditor ? (
         <div className="space-y-2">
-          <Label htmlFor="question-inline-editor">Question Content</Label>
+            <Label>Image RU (optional)</Label>
+            <FileUpload
+                value={imagePreview}
+                onChange={handleImageChangeRu}
+                onRemove={handleImageRemoveRu}
+                disabled={isSubmitting}
+            />
+        </div>
+
+
+        {isInlineEditor ? (
+        <div className="space-y-2">
+          <Label htmlFor="question-inline-editor">Question Content UZ</Label>
           <QuestionInlineComposer
-            value={formData.text}
+            value={formData.textUz}
             onChange={(nextValue) =>
-              setFormData((prev) => ({ ...prev, text: nextValue }))
+              setFormData((prev) => ({ ...prev, textUz: nextValue }))
             }
             disabled={isSubmitting}
           />
@@ -473,13 +555,13 @@ export function StandaloneQuestionForm({
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.95fr)]">
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="text">Question Text</Label>
+              <Label htmlFor="text">Question Text UZ</Label>
               <Textarea
                 id="text"
                 ref={questionTextRef}
-                value={formData.text}
+                value={formData.textUz}
                 onChange={(event) =>
-                  setFormData((prev) => ({ ...prev, text: event.target.value }))
+                  setFormData((prev) => ({ ...prev, textUz: event.target.value }))
                 }
                 placeholder="Enter your question..."
                 rows={7}
@@ -497,7 +579,7 @@ export function StandaloneQuestionForm({
                 Question Preview
               </p>
               <MathText
-                value={formData.text}
+                value={formData.textUz}
                 className="mt-3 min-h-12 text-base leading-7 text-neutral-900"
                 emptyFallback="Question preview will appear here"
               />
@@ -505,13 +587,64 @@ export function StandaloneQuestionForm({
           </div>
 
           <MathComposer
-            value={mathExpression}
-            onChange={setMathExpression}
-            onInsert={handleInsertMathIntoQuestion}
+            value={mathExpressionUz}
+            onChange={setMathExpressionUz}
+            onInsert={handleInsertMathIntoQuestionUz}
             disabled={isSubmitting}
           />
+
         </div>
       )}
+
+        {isInlineEditor ? (
+            <div className="space-y-2">
+                <Label htmlFor="question-inline-editor-ru">Question Content (RU)</Label>
+                <QuestionInlineComposer
+                    value={formData.textRu}
+                    onChange={(nextValue) =>
+                        setFormData((prev) => ({ ...prev, textRu: nextValue ?? "" }))
+                    }
+                    disabled={isSubmitting}
+                />
+            </div>
+        ) : (
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.95fr)]">
+                <div className="space-y-3">
+                    <div className="space-y-2">
+                        <Label htmlFor="text-ru">Question Text (RU)</Label>
+                        <Textarea
+                            id="text-ru"
+                            value={formData.textRu}
+                            onChange={(event) =>
+                                setFormData((prev) => ({ ...prev, textRu: event.target.value }))
+                            }
+                            placeholder="Введите вопрос..."
+                            rows={7}
+                            required
+                            disabled={isSubmitting}
+                        />
+                    </div>
+
+                    <div className="rounded-2xl border border-neutral-200 bg-neutral-50/80 p-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                            Question Preview (RU)
+                        </p>
+                        <MathText
+                            value={formData.textRu}
+                            className="mt-3 min-h-12 text-base leading-7 text-neutral-900"
+                            emptyFallback="Preview will appear here"
+                        />
+                    </div>
+                </div>
+
+                <MathComposer
+                    value={mathExpressionRu}
+                    onChange={setMathExpressionRu}
+                    onInsert={handleInsertMathIntoQuestionRu}
+                    disabled={isSubmitting}
+                />
+            </div>
+        )}
 
       {formData.type === "MultipleChoice" && (
         <div className="space-y-3">

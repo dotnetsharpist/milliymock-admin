@@ -26,33 +26,39 @@ export const questionService = {
      * Create standalone question (with optional image upload)
      */
     async createQuestion(data: QuestionFormData): Promise<ApiResponse<Question>> {
-        console.log(data);
         const formData = new FormData();
 
         // Required fields - match API contract with PascalCase
-        formData.append("TestId", data.TestId.toString());
-        formData.append("Order", data.Order.toString());
-        formData.append("Score", data.Score.toString().replace(",", "."));
-        formData.append("Type", data.Type.toString());
+        formData.append("TestId", data.testId.toString());
+        formData.append("Order", data.order.toString());
+        formData.append("Score", data.score.toString().replace(",", "."));
+        formData.append("Type", data.type.toString());
 
         // Optional fields
-        if (data.Text) {
-            formData.append("Text", data.Text);
+        if (data.textUz) {
+            formData.append("TextUz", data.textUz);
+        }
+        if (data.textRu) {
+            formData.append("TextRu", data.textRu);
         }
 
-        if (data.Image) {
-            formData.append("Image", data.Image);
+        if (data.imageUz) {
+            formData.append("ImageUz", data.imageUz);
         }
 
-        if (data.CorrectAnswer) {
-            formData.append("CorrectAnswer", data.CorrectAnswer);
-        }
-        if (data.QuestionGroupId) {
-            formData.append("QuestionGroupId", data.QuestionGroupId.toString());
+        if (data.imageRu) {
+            formData.append("ImageRu", data.imageRu);
         }
 
-        if (data.Options) {
-            data.Options.forEach((opt, index) => {
+        if (data.correctAnswer) {
+            formData.append("CorrectAnswer", data.correctAnswer);
+        }
+        if (data.questionGroupId) {
+            formData.append("QuestionGroupId", data.questionGroupId.toString());
+        }
+
+        if (data.options) {
+            data.options.forEach((opt, index) => {
                 formData.append(`Options[${index}].Text`, opt.text);
                 formData.append(`Options[${index}].IsCorrect`, opt.isCorrect.toString());
             });
@@ -75,24 +81,30 @@ export const questionService = {
         const formData = new FormData();
 
         // Required fields with PascalCase to match API contract// formData.append("TestId", data.testId);
-        formData.append("TestId", data.TestId.toString());
-        if (data.Order !== undefined) {
-            formData.append("Order", data.Order.toString());
+        formData.append("TestId", data.testId.toString());
+        if (data.order !== undefined) {
+            formData.append("Order", data.order.toString());
         }
 
-        formData.append("Score", data.Score.toString()); // Default score
-        formData.append("Type", data.Type);
+        formData.append("Score", data.score.toString()); // Default score
+        formData.append("Type", data.type);
 
-        formData.append("TestId", data.TestId.toString());
+        formData.append("TestId", data.testId.toString());
 
 
         // Optional fields
-        if (data.Text !== undefined) {
-            formData.append("Text", data.Text);
+        if (data.textUz !== undefined) {
+            formData.append("TextUz", data.textUz);
+        }
+        if (data.textRu !== undefined) {
+            formData.append("TextRu", data.textRu);
         }
 
-        if (data.Image) {
-            formData.append("Image", data.Image);
+        if (data.imageUz) {
+            formData.append("ImageUz", data.imageUz);
+        }
+        if (data.imageRu) {
+            formData.append("ImageRu", data.imageRu);
         }
 
         // Use uploadPut for PUT request (multipart/form-data)
@@ -108,14 +120,15 @@ export const questionService = {
 
     async createQuestionGroupQuestion(data: QuestionGroupQuestionCreate): Promise<ApiResponse<QuestionGroupQuestionCreate>> {
         const formData = new FormData();
-
         console.log(data)
+
 
         formData.append("Order", data.order.toString());
         formData.append("Score", data.score.toString().replace(",", "."));
         formData.append("Type", data.type.toString());
 
-        formData.append("Text", data.text);
+        formData.append("TextUz", data.textUz);
+        formData.append("TextRu", data.textRu);
 
         if (data.correctAnswer) {
             formData.append("CorrectAnswer", data.correctAnswer);
@@ -123,7 +136,6 @@ export const questionService = {
         if (data.questionGroupId) {
             formData.append("QuestionGroupId", data.questionGroupId.toString());
         }
-        console.log(formData)
 
         return await apiService.upload<QuestionGroupQuestionCreate>(API_ENDPOINTS.STANDALONE_QUESTIONS, formData);
     }

@@ -33,11 +33,6 @@ export const API_ENDPOINTS = {
     QUESTION_GROUP_BY_ID: (id: string) => `api/question-group/${id}`,
     QUESTION_GROUPS_BY_TEST: (testId: string) => `api/question-group?testId=${testId}`,
 
-    // QuestionGroup Questions
-    GROUP_QUESTIONS: "api/group-questions",
-    GROUP_QUESTION_BY_ID: (id: string) => `api/group-questions/${id}`,
-    GROUP_QUESTIONS_BY_GROUP: (groupId: string) => `api/question-group/${groupId}/questions`,
-
     // QuestionGroup Options (shared)
     GROUP_OPTIONS: "api/group-options",
     GROUP_OPTION_BY_ID: (id: string) => `api/group-options/${id}`,

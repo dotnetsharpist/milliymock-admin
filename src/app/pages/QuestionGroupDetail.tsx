@@ -5,13 +5,30 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { Plus, Edit, Trash2, ArrowLeft } from "lucide-react";
 import { DataTable, Column } from "../components/DataTable";
 import {
-  mockQuestionGroups,
-  mockQuestions,
-  mockOptions,
-  mockTests,
-  Question,
   Option,
 } from "../data/mockData";
+import {Translation} from "../models/translations";
+
+export interface Question {
+    id: string;
+    questionGroupId: string;
+    textUz: string;
+    textRu: string;
+    type: "Matching" | "FreeAnswer";
+    order: number; // Position within the group
+    correctOptionId?: string;
+    correctAnswer: "";// Reference to the correct option from the group
+}
+
+export interface QuestionData {
+    id: string;
+    questionGroupId: string;
+    translations: Translation[];
+    type: "Matching" | "FreeAnswer";
+    order: number; // Position within the group
+    correctOptionId?: string;
+    correctAnswer: ""; // Reference to the correct option from the group
+}
 
 
 import { QuestionGroupDetailModel } from "../models/questionGroups";
@@ -23,6 +40,7 @@ import { OptionModal } from "../components/modals/OptionModal";
 import { toast } from "sonner";
 import { ImageIcon } from "lucide-react";
 import { BASE_URL } from "../config/api";
+import {QuestionFormData} from "../models/questions";
 
 export function QuestionGroupDetail() {
   const { groupId } = useParams();
@@ -47,7 +65,7 @@ export function QuestionGroupDetail() {
                 if (!res.success || !res.data) return;
 
                 const data = res.data;
-
+                console.log(data)
                 setGroup(data);
                 setQuestions(data.questions ?? []);
                 setOptions(data.options ?? []);
@@ -136,7 +154,7 @@ export function QuestionGroupDetail() {
     return option?.text || "—";
   };
 
-  const questionColumns: Column<Question>[] = [
+  const questionColumns: Column<QuestionData>[] = [
     {
       header: "Order",
       accessor: (q) => (
@@ -146,7 +164,7 @@ export function QuestionGroupDetail() {
     {
       header: "Question Text",
       accessor: (q) => (
-        <span className="block max-w-md truncate">{q.text}</span>
+        <span className="block max-w-md truncate">{q.translations?.[0]?.text ?? "No translation"}</span>
       )
     },
     {
@@ -165,7 +183,7 @@ export function QuestionGroupDetail() {
       header: "Correct Answer",
       accessor: (q) => (
         <span className="text-sm text-neutral-600">
-          {q.type === "Matching" ? getCorrectOptionText(q.correctOptionId) : "—"}
+          {q.type === "Matching" ? getCorrectOptionText(q.correctOptionId) : q.correctAnswer}
         </span>
       ),
     },
@@ -230,14 +248,14 @@ export function QuestionGroupDetail() {
 
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h1 className="text-3xl font-semibold text-neutral-900">{group.title}</h1>
+            <h1 className="text-3xl font-semibold text-neutral-900">{group.translations?.[0]?.text ?? "No translation" }</h1>
             <p className="text-neutral-600 mt-1"> "Unknown" </p>
           </div>
           <div className="ml-6 rounded-lg border border-neutral-200 overflow-hidden bg-neutral-50">
-            {group.imagePath ? (
+            {group.translations?.[0]?.imagePath ? (
               <img
-                src={getImageUrl(group.imagePath)}
-                alt={group.title}
+                src={getImageUrl(group.translations?.[0]?.imagePath)}
+                alt={group.translations?.[0]?.text ?? "Question Group Image"}
                 className="w-64 h-32 object-cover"
               />
             ) : (

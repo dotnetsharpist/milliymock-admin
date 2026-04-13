@@ -1,21 +1,20 @@
 import { Question } from "./questions";
 import { Option} from "./options";
+import { Translation} from "./translations";
 
 // This is the READ model (from GET response)
 export interface QuestionGroup {
     id: string;
     testId: string;
-    title: string;
+    translations: Translation[];
     questionCount: number
-    imagePath?: string; // Relative path from backend (for display only)
 }
 
 export interface QuestionGroupDetailModel {
     id: string;
     testId: string;
-    title: string;
+    translations: Translation[];
     questionCount: number
-    imagePath?: string;
     questions?: Question[] | null;
     options?: Option[] | null;
     // Relative path from backend (for display only)
@@ -24,12 +23,15 @@ export interface QuestionGroupDetailModel {
 
 export interface QuestionGroupFormData {
     testId: string;
-    title: string;
-    image?: File | null;
+    textUz: string;
+    textRu: string;
+    imageUz?: File | null;
+    imageRu?: File | null;
 }
 
 export interface QuestionGroupQuestionCreate {
-    text: string;
+    textUz: string;
+    textRu: string;
     type: "Matching" | "FreeAnswer";
     order: number; // Position within the group
     score: string;

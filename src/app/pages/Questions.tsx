@@ -23,39 +23,19 @@ import {
   TooltipTrigger,
 } from "../components/ui/tooltip";
 import { toast } from "sonner";
-import { StandaloneQuestion } from "../data/mockData";
 import { Question as ApiQuestion } from "../models/questions";
+import { Option as QuestionOption} from "../models/options";
 import { questionService } from "../services/questionService";
 import { optionService } from "../services/optionService";
 import { BASE_URL } from "../config/api";
 import { MathText } from "../components/math/MathText";
 
 type QuestionType = "MultipleChoice" | "Matching" | "FreeAnswer";
-type QuestionListItem = StandaloneQuestion & {
+type QuestionListItem = ApiQuestion & {
   correctAnswer?: string | null;
   score?: number | null;
 };
 
-interface QuestionOption {
-  id: string;
-  questionId: string | null;
-  questionGroupId: number | null;
-  text: string;
-  isCorrect: boolean;
-}
-
-const normalizeQuestion = (question: ApiQuestion): QuestionListItem => ({
-  id: String(question.id),
-  testId: String(question.testId),
-  text: question.text ?? "",
-  imagePath: question.imagePath ?? undefined,
-  type:
-    question.type === "Matching" ? "MultipleChoice" : question.type,
-  order: question.order,
-  createdAt: "",
-  correctAnswer: question.correctAnswer,
-  score: question.score,
-});
 
 export function Questions() {
   const navigate = useNavigate();
@@ -63,7 +43,7 @@ export function Questions() {
   const [questions, setQuestions] = useState<QuestionListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedQuestion, setSelectedQuestion] = useState<StandaloneQuestion | undefined>();
+  const [selectedQuestion, setSelectedQuestion] = useState<ApiQuestion | undefined>();
   const selectedTestId = searchParams.get("testId");
 
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
@@ -86,12 +66,10 @@ export function Questions() {
   const fetchQuestions = async () => {
     try {
       setIsLoading(true);
-      const response = selectedTestId
-        ? await questionService.getQuestionsByTestId(selectedTestId)
-        : await questionService.getQuestions();
+      const response = await questionService.getQuestionsByTestId(selectedTestId)
 
       if (response.success && response.data) {
-        setQuestions(response.data.map(normalizeQuestion));
+        setQuestions(response.data);
       } else {
         toast.error("Failed to load questions");
         setQuestions([]);
@@ -112,7 +90,7 @@ export function Questions() {
     navigate(nextHref);
   };
 
-  const handleEdit = (e: React.MouseEvent, question: StandaloneQuestion) => {
+  const handleEdit = (e: React.MouseEvent, question: ApiQuestion) => {
     e.stopPropagation();
     setSelectedQuestion(question);
     setIsModalOpen(true);
@@ -132,7 +110,7 @@ export function Questions() {
       const response = await questionService.deleteQuestion(questionToDelete);
 
       if (response.success) {
-        setQuestions(questions.filter((q) => q.id !== questionToDelete));
+        setQuestions(questions.filter((q) => q.id !== parseInt(questionToDelete)));
         toast.success("Question deleted successfully");
       } else {
         toast.error("Failed to delete question");
@@ -147,7 +125,7 @@ export function Questions() {
     }
   };
 
-  const handleSave = async (question: StandaloneQuestion) => {
+  const handleSave = async (question: ApiQuestion) => {
     // The StandaloneQuestionModal will handle the API calls
     // After it completes, refresh the list
     await fetchQuestions();
@@ -166,11 +144,11 @@ export function Questions() {
     setSearchParams(nextParams, { replace: true });
   };
 
-  const handleRowClick = async (question: StandaloneQuestion) => {
+  const handleRowClick = async (question: ApiQuestion) => {
     if (question.type === "MultipleChoice") {
       try {
         setIsLoadingOptions(true);
-        const response = await optionService.getOptionsByQuestionId(question.id);
+        const response = await optionService.getOptionsByQuestionId(question.id.toString());
 
         if (response.success && response.data) {
           const options = response.data.map((opt) => {
@@ -188,8 +166,8 @@ export function Questions() {
           });
 
           setOptionsModalQuestion({
-            id: parseInt(question.id),
-            text: question.text,
+            id: question.id,
+            text: question.translations[0].text,
           });
           setQuestionOptions(options);
           setIsOptionsModalOpen(true);
@@ -357,10 +335,10 @@ export function Questions() {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {question.imagePath ? (
+                            {question.translations[0].imagePath ? (
                               <div className="w-12 h-12 rounded-md overflow-hidden border border-neutral-200">
                                 <img
-                                  src={getImageUrl(question.imagePath)}
+                                  src={getImageUrl(question.translations[0].imagePath)}
                                   alt="Question preview"
                                   className="w-full h-full object-cover"
                                 />
@@ -373,7 +351,7 @@ export function Questions() {
                           </td>
                           <td className="px-6 py-4 text-sm">
                             <MathText
-                              value={question.text}
+                              value={question.translations[0].text}
                               className="max-w-md truncate text-neutral-900"
                             />
                           </td>
@@ -440,7 +418,6 @@ export function Questions() {
           questionText={optionsModalQuestion.text}
           options={questionOptions}
           onSave={(updatedOptions) => {
-            console.log("Saved options:", updatedOptions);
             setIsOptionsModalOpen(false);
           }}
         />
