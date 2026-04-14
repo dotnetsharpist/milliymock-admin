@@ -121,17 +121,18 @@ export interface MathInputHandle {
 }
 
 interface MathInputProps {
-  label: string;
+  label?: string; // Made optional to support options
   onInput?: (latex: string) => void;
   initialValue?: string;
   onFocus?: () => void;
   onToggleKeyboard?: () => void;
   disabled?: boolean;
+  compact?: boolean; // New prop to make the input smaller for option lists
 }
 
 const MathInput = forwardRef<MathInputHandle, MathInputProps>(
   (
-    { label, onInput, initialValue = "", onFocus, onToggleKeyboard, disabled },
+    { label, onInput, initialValue = "", onFocus, onToggleKeyboard, disabled, compact },
     ref
   ) => {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -150,10 +151,10 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
         const mf = MQ.MathField(containerRef.current, {
           spaceBehavesLikeTab: false,
           leftRightIntoCmdGoes: "up",
-          restrictMismatchedBrackets: false, // Ensures unmatched brackets are allowed
+          restrictMismatchedBrackets: false,
           supSubsRequireOperand: false,
           charsThatBreakOutOfSupSub: "+-=<>",
-          autoCommands: "theta sqrt nthroot", // FIXED: Removed 'int' so typing it doesn't force the limit boxes
+          autoCommands: "theta sqrt nthroot",
           autoOperatorNames: "sin cos tan ln log",
           handlers: {
             edit: () => {
@@ -163,7 +164,8 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
         } as any);
 
         if (initialValue) {
-          mf.latex(initialValue);
+          const fixedInitialValue = initialValue.replace(/\\circ/g, '\\text{°}');
+          mf.latex(fixedInitialValue);
         }
 
         mqFieldRef.current = mf;
@@ -186,6 +188,31 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
         );
         if (!isMathFieldFocused) return;
 
+        const isInsideSystemBlock = () => {
+          const latex = mqFieldRef.current?.latex() || "";
+          return latex.includes("\\left\\{");
+        };
+
+        const isInsideSystem = isInsideSystemBlock();
+
+        if (e.key === "/") {
+          if (isInsideSystem) {
+            e.preventDefault();
+            e.stopPropagation();
+            mf.write("/");
+            return;
+          }
+        }
+
+        if ((e.key === "Enter" || e.keyCode === 13) && e.shiftKey) {
+          if (isInsideSystemBlock()) {
+            e.preventDefault();
+            e.stopPropagation();
+            mf.cmd("/"); 
+            return;
+          }
+        }
+
         if (e.key === " " || e.code === "Space") {
           e.preventDefault();
           mf.write("\\ ");
@@ -193,38 +220,13 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
         }
 
         if (e.key === "{") {
-  e.preventDefault();
-  mf.write("\\left\\{\\right\\}");
-  mf.keystroke("Left"); // cursor ichiga tushadi
-  return;
-}
-
-        // FIX: Force physical Mac/iPad keys to bypass MathQuill's buggy tablet listeners
-        // if (e.key === "{") {
-        //   e.preventDefault();
-        //   // Write a single left stretchy brace with an invisible right side (no crashing commands)
-        //   mf.write("\\left\\{\\right."); 
-        //   mf.keystroke("Left"); 
-        //   return;
-        // }
-        // if (e.key === "}") {
-        //   e.preventDefault();
-        //   mf.write("\\}"); // Literal right brace
-        //   return;
-        // }
-        // if (e.key === "[") {
-        //   e.preventDefault();
-        //   mf.typedText("["); 
-        //   return;
-        // }
-        // if (e.key === "]") {
-        //   e.preventDefault();
-        //   mf.typedText("]"); 
-        //   return;
-        // }
+          e.preventDefault();
+          mf.write("\\left\\{\\right\\}");
+          mf.keystroke("Left");
+          return;
+        }
       };
 
-      // Ensure capture phase so React fires this BEFORE MathQuill ignores it
       document.addEventListener("keydown", handleKeyDown, true);
       return () => document.removeEventListener("keydown", handleKeyDown, true);
     }, []);
@@ -259,7 +261,7 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
 
     return (
       <div className="relative" onFocusCapture={onFocus}>
-        <Label className="mb-2 block">{label}</Label>
+        {label && <Label className="mb-2 block">{label}</Label>}
 
         <div
           className={`relative overflow-hidden rounded-xl border-2 border-gray-300 bg-white shadow-sm transition-colors duration-150 focus-within:border-blue-500 hover:border-gray-400 ${
@@ -267,19 +269,18 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
           }`}
         >
           {status === "loading" && (
-            <div className="flex min-h-[120px] animate-pulse items-center px-6 py-6 text-sm text-gray-400">
+            <div className={`flex items-center px-6 text-sm text-gray-400 animate-pulse ${compact ? "min-h-[56px]" : "min-h-[120px] py-6"}`}>
               Loading math editor…
             </div>
           )}
 
           <div
             ref={containerRef}
-            id="mq-field-root"
-            className="mq-host"
+            className={`mq-host mq-field-root ${compact ? "mq-compact" : ""}`}
             style={{ display: status === "loading" ? "none" : "block" }}
           />
 
-          <div className="absolute right-3 top-3 z-10 flex items-start gap-2">
+          <div className={`absolute right-3 z-10 flex items-start gap-2 ${compact ? 'top-1.5' : 'top-3'}`}>
             <button
               type="button"
               onMouseDown={(e) => {
@@ -291,31 +292,46 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
             >
               <Keyboard className="h-5 w-5" />
             </button>
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              className="rounded-md p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
-              title="Options"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
+            {!compact && (
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                className="rounded-md p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                title="Options"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            )}
           </div>
         </div>
 
-       <style>{`
-      #mq-field-root {
+        {/* IMPORTANT: Changed #mq-field-root to .mq-field-root to avoid ID clashing 
+          which breaks styling when multiple MathInputs are present! 
+        */}
+        <style>{`
+          .mq-field-root {
             display: block !important; 
             width: 100% !important;
             min-height: 120px !important;
             max-height: 400px !important;
             overflow-x: auto !important;
             overflow-y: auto !important;
-            /* Keep UI side paddings */
             padding-left: 32px !important; 
             padding-right: 90px !important;
           }
 
-          #mq-field-root .mq-editable-field {
+          .mq-compact {
+            min-height: 56px !important;
+            padding-left: 16px !important;
+            padding-right: 50px !important;
+          }
+
+          .mq-compact .mq-root-block {
+            padding-top: 14px !important;
+            padding-bottom: 14px !important;
+          }
+
+          .mq-field-root .mq-editable-field {
             border: none !important;
             box-shadow: none !important;
             outline: none !important;
@@ -323,10 +339,7 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
             width: 100% !important;
             min-height: 100% !important;
             max-width: 100% !important;
-            
-            /* Remove the padding from here so we can center it in the root block */
             padding: 0 !important; 
-
             font-size: 20px !important;
             font-weight: 700 !important;
             color: #111827 !important;
@@ -336,98 +349,105 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
             word-wrap: break-word !important;
           }
 
-          #mq-field-root .mq-root-block {
+          .mq-field-root .mq-root-block {
             display: inline-block !important;
             font-weight: 700 !important;
-            
-            /* 🔥 THE FIX: Push the typing area into the vertical center */
-            /* This gives 35px of safe space at the top for tall superscripts */
             padding-top: 35px !important; 
             padding-bottom: 35px !important; 
           }
 
-          #mq-field-root .mq-nthroot {
+          .mq-field-root .mq-nthroot {
             margin-left: 4px !important;
           }
 
-       
-
-       
-
-          #mq-field-root .mq-editable-field.mq-focused {
+          .mq-field-root .mq-editable-field.mq-focused {
             box-shadow: none !important;
             outline: none !important;
           }
 
-          #mq-field-root .mq-math-mode,
-          #mq-field-root .mq-math-mode * {
+          .mq-field-root .mq-math-mode,
+          .mq-field-root .mq-math-mode * {
             color: #111827 !important;
             font-weight: 700 !important;
           }
 
-          #mq-field-root .mq-cursor {
+          .mq-field-root .mq-cursor {
             border-left: 2px solid #2563eb !important;
           }
 
-          #mq-field-root .mq-selection,
-          #mq-field-root .mq-selection .mq-non-leaf,
-          #mq-field-root .mq-selection span {
+          .mq-field-root .mq-selection,
+          .mq-field-root .mq-selection .mq-non-leaf,
+          .mq-field-root .mq-selection span {
             background-color: rgba(37, 99, 235, 0.15) !important;
             color: #111827 !important;
           }
 
-          #mq-field-root .mq-fraction .mq-fraction-line,
-          #mq-field-root .mq-numerator,
-          #mq-field-root .mq-denominator {
+          .mq-field-root .mq-fraction .mq-fraction-line,
+          .mq-field-root .mq-numerator,
+          .mq-field-root .mq-denominator {
             color: #111827 !important;
           }
 
-          #mq-field-root .mq-fraction .mq-fraction-line {
+          .mq-field-root .mq-fraction .mq-fraction-line {
             border-top-color: #111827 !important;
             border-top-width: 1.5px !important;
           }
 
-          #mq-field-root .mq-sup,
-          #mq-field-root .mq-sub {
+          .mq-field-root .mq-sup,
+          .mq-field-root .mq-sub {
             color: #111827 !important;
-            font-size: 0.9em !important; 
-          } 
+            font-size: 1.2em !important; 
+          }
+          
+          .mq-field-root .mq-sup .mq-text {
+            font-size: 1.6em !important; 
+            line-height: 0.8 !important;
+            font-family: 'Arial', sans-serif !important; 
+            display: inline-block;
+            transform: translateY(2px); 
+          }
 
-          #mq-field-root .mq-sqrt-prefix,
-          #mq-field-root .mq-nthroot {
+          .mq-field-root .mq-sqrt-stem {
+            padding-top: 2px !important;
+          }
+          
+          .mq-field-root .mq-sqrt-stem .mq-sqrt,
+          .mq-field-root .mq-sqrt-stem .mq-nthroot {
+            margin-top: 3px !important;  
+            margin-left: 3px !important;  
+          }
+
+          .mq-field-root .mq-sqrt-prefix,
+          .mq-field-root .mq-nthroot {
             color: #111827 !important;
           }
 
-          #mq-field-root .mq-nthroot .mq-sup {
+          .mq-field-root .mq-nthroot .mq-sup {
             font-size: 0.6em !important;
             color: #111827 !important;
           }
 
-          #mq-field-root .mq-nthroot > .mq-sup-only {
+          .mq-field-root .mq-nthroot > .mq-sup-only {
             margin-right: 0.1em !important;
           }
 
-          #mq-field-root .mq-empty .mq-root-block:before {
+          .mq-field-root .mq-empty .mq-root-block:before {
             content: '';
           }
 
-          #mq-field-root .mq-non-leaf,
-          #mq-field-root .mq-array.mq-non-leaf {
+          .mq-field-root .mq-non-leaf,
+          .mq-field-root .mq-array.mq-non-leaf {
             background: transparent !important;
           }
 
-          #mq-field-root .mq-paren,
-          #mq-field-root .mq-bracket-l, 
-          #mq-field-root .mq-bracket-r {
+          .mq-field-root .mq-paren,
+          .mq-field-root .mq-bracket-l, 
+          .mq-field-root .mq-bracket-r {
             color: #374151 !important;
             padding: 0 1px !important;
             font-weight: 700 !important;
             font-size: 0.75em !important;
             vertical-align: baseline !important;
-          }
-
-          #mq-field-root .mq-sup .mq-operator-name {
-            font-size: 1.4em !important;
           }
         `}</style>
       </div>
@@ -546,7 +566,6 @@ function MathKeyboard({ mathInputRef, isVisible = true, onClose }: MathKeyboardP
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 border-t-2 border-gray-300 bg-gray-50 px-4 py-3 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
       <div className="mx-auto max-w-[1400px]">
-        {/* Close Button Header */}
         <div className="mb-2 flex items-center justify-between px-1">
           <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
             Virtual Keyboard
@@ -563,7 +582,6 @@ function MathKeyboard({ mathInputRef, isVisible = true, onClose }: MathKeyboardP
         </div>
 
         <div className="grid grid-cols-1 items-end gap-3 lg:grid-cols-[1fr_1fr_320px]">
-          {/* Section 1 */}
           <div className="grid grid-cols-4 gap-2">
             {!isAlphabetMode ? (
               <>
@@ -574,7 +592,6 @@ function MathKeyboard({ mathInputRef, isVisible = true, onClose }: MathKeyboardP
                 <Key id="lp" action={{ type: "typed", arg: "(" }} title="(">(</Key>
                 <Key id="rp" action={{ type: "typed", arg: ")" }} title=")">)</Key>
                 
-                {/* FIX: Simplified virtual key to guarantee no crashes */}
                 <Key 
                   id="system" 
                   action={{ 
@@ -610,24 +627,19 @@ function MathKeyboard({ mathInputRef, isVisible = true, onClose }: MathKeyboardP
             ) : (
               <>
                 <Key id="neq" action={{ type: "write", arg: "\\ne" }}>≠</Key>
-                
-                {/* FIXED: Replaced \\int with literal typed symbol so limit boxes do not appear */}
                 <Key id="int" action={{ type: "typed", arg: "∫" }}><span className="text-2xl">∫</span></Key>
-                
-                <Key id="deg" action={{ type: "write", arg: "^{\\circ}" }}><span className="text-2xl">°</span></Key>
-                
-<Key 
-  id="cases" 
-  action={{ 
-    type: "custom", 
-    fn: (mf) => { 
-      mf.typedText("{"); // 🔥 faqat oddiy {
-    } 
-  }}
->
-  <span className="text-xl">{`{`}</span>
-</Key>
-
+                <Key id="deg" action={{ type: "write", arg: "^{\\text{°}}" }}><span className="text-2xl">°</span></Key>
+                <Key 
+                  id="cases" 
+                  action={{ 
+                    type: "custom", 
+                    fn: (mf) => { 
+                      mf.typedText("{");
+                    } 
+                  }}
+                >
+                  <span className="text-xl">{`{`}</span>
+                </Key>
                 <Key id="emptyset" action={{ type: "write", arg: "\\emptyset" }}>∅</Key>
                 <Key id="perp" action={{ type: "write", arg: "\\perp" }}><span className="text-lg font-bold">⊥</span></Key>
                 <Key id="in" action={{ type: "write", arg: "\\in" }}>∈</Key>
@@ -648,7 +660,6 @@ function MathKeyboard({ mathInputRef, isVisible = true, onClose }: MathKeyboardP
             )}
           </div>
 
-          {/* Section 2 */}
           <div className="grid grid-cols-4 gap-2">
             <Key id="7" action={{ type: "typed", arg: "7" }} variant="gray">7</Key>
             <Key id="8" action={{ type: "typed", arg: "8" }} variant="gray">8</Key>
@@ -674,7 +685,6 @@ function MathKeyboard({ mathInputRef, isVisible = true, onClose }: MathKeyboardP
             <Key id="add" action={{ type: "typed", arg: "+" }} variant="white">+</Key>
           </div>
 
-          {/* Section 3 */}
           <div className="grid grid-cols-2 gap-2">
             <Key id="fn" variant="gray" span={2} title="Insert function (coming soon)">
               <span className="text-sm tracking-wide">functions</span>
@@ -779,11 +789,25 @@ export function StandaloneQuestionForm({
   // Focus & Keyboard State
   const mathInputUzRef = useRef<MathInputHandle>(null);
   const mathInputRuRef = useRef<MathInputHandle>(null);
-  const [activeInputFocus, setActiveInputFocus] = useState<"uz" | "ru">("uz");
+  
+  // Track dynamically generated refs for the options loop
+  const optionsRefs = useRef<Record<string, MathInputHandle | null>>({});
+  
+  const [activeInputFocus, setActiveInputFocus] = useState<string>("uz");
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
-  const activeMathRef =
-    activeInputFocus === "ru" ? mathInputRuRef : mathInputUzRef;
+  // Dynamically resolve the reference for the active math input so the keyboard points to the right one
+  const getActiveMathRef = (): React.RefObject<MathInputHandle | null> => {
+    if (activeInputFocus === "uz") return mathInputUzRef;
+    if (activeInputFocus === "ru") return mathInputRuRef;
+    if (activeInputFocus.startsWith("option-")) {
+      const optionId = activeInputFocus.replace("option-", "");
+      return { current: optionsRefs.current[optionId] || null };
+    }
+    return mathInputUzRef;
+  };
+  
+  const activeMathRef = getActiveMathRef();
 
   const getImageUrl = (imagePath: string | undefined | null) => {
     if (!imagePath) return undefined;
@@ -1191,32 +1215,42 @@ export function StandaloneQuestionForm({
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {options.map((option, index) => (
-                <div key={option.id} className="flex items-center gap-2">
+                <div key={option.id} className="flex items-start gap-2">
                   <Button
                     type="button"
                     variant={option.isCorrect ? "default" : "outline"}
                     size="icon"
-                    className="shrink-0"
+                    className="shrink-0 mt-1"
                     onClick={() => handleToggleCorrect(index)}
                     disabled={isSubmitting}
                   >
                     <CheckCircle className="h-4 w-4" />
                   </Button>
-                  <Input
-                    value={option.text}
-                    onChange={(event) =>
-                      handleOptionChange(index, event.target.value)
-                    }
-                    placeholder={`Option ${index + 1}`}
-                    required
-                    disabled={isSubmitting}
-                  />
+                  
+                  <div className="flex-1">
+                    <MathInput
+                      ref={(el) => {
+                        if (el) optionsRefs.current[option.id] = el;
+                      }}
+                      compact
+                      initialValue={option.text}
+                      onInput={(latex) => handleOptionChange(index, latex)}
+                      onFocus={() => setActiveInputFocus(`option-${option.id}`)}
+                      onToggleKeyboard={() => {
+                        setActiveInputFocus(`option-${option.id}`);
+                        setIsKeyboardVisible((p) => !p);
+                      }}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
+                    className="shrink-0 mt-1"
                     onClick={() => handleRemoveOption(index)}
                     disabled={isSubmitting}
                   >
