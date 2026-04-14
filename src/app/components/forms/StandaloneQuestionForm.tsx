@@ -150,10 +150,10 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
         const mf = MQ.MathField(containerRef.current, {
           spaceBehavesLikeTab: false,
           leftRightIntoCmdGoes: "up",
-          restrictMismatchedBrackets: true,
+          restrictMismatchedBrackets: false, // Ensures unmatched brackets are allowed
           supSubsRequireOperand: false,
           charsThatBreakOutOfSupSub: "+-=<>",
-          autoCommands: "theta sqrt nthroot",
+          autoCommands: "theta sqrt nthroot", // FIXED: Removed 'int' so typing it doesn't force the limit boxes
           autoOperatorNames: "sin cos tan ln log",
           handlers: {
             edit: () => {
@@ -191,10 +191,42 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
           mf.write("\\ ");
           return;
         }
+
+        if (e.key === "{") {
+  e.preventDefault();
+  mf.write("\\left\\{\\right\\}");
+  mf.keystroke("Left"); // cursor ichiga tushadi
+  return;
+}
+
+        // FIX: Force physical Mac/iPad keys to bypass MathQuill's buggy tablet listeners
+        // if (e.key === "{") {
+        //   e.preventDefault();
+        //   // Write a single left stretchy brace with an invisible right side (no crashing commands)
+        //   mf.write("\\left\\{\\right."); 
+        //   mf.keystroke("Left"); 
+        //   return;
+        // }
+        // if (e.key === "}") {
+        //   e.preventDefault();
+        //   mf.write("\\}"); // Literal right brace
+        //   return;
+        // }
+        // if (e.key === "[") {
+        //   e.preventDefault();
+        //   mf.typedText("["); 
+        //   return;
+        // }
+        // if (e.key === "]") {
+        //   e.preventDefault();
+        //   mf.typedText("]"); 
+        //   return;
+        // }
       };
 
-      document.addEventListener("keydown", handleKeyDown);
-      return () => document.removeEventListener("keydown", handleKeyDown);
+      // Ensure capture phase so React fires this BEFORE MathQuill ignores it
+      document.addEventListener("keydown", handleKeyDown, true);
+      return () => document.removeEventListener("keydown", handleKeyDown, true);
     }, []);
 
     useImperativeHandle(ref, () => ({
@@ -235,7 +267,7 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
           }`}
         >
           {status === "loading" && (
-            <div className="flex min-h-[80px] animate-pulse items-center px-6 py-6 text-sm text-gray-400">
+            <div className="flex min-h-[120px] animate-pulse items-center px-6 py-6 text-sm text-gray-400">
               Loading math editor…
             </div>
           )}
@@ -244,7 +276,7 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
             ref={containerRef}
             id="mq-field-root"
             className="mq-host"
-            style={{ display: status === "loading" ? "none" : "flex" }}
+            style={{ display: status === "loading" ? "none" : "block" }}
           />
 
           <div className="absolute right-3 top-3 z-10 flex items-start gap-2">
@@ -272,36 +304,36 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
 
         <style>{`
           #mq-field-root {
-            display: flex !important;
-            align-items: center !important;
+            display: block !important; 
             width: 100% !important;
-            min-height: 80px !important;
-            overflow-x: hidden !important;
+            min-height: 120px !important;
+            max-height: 400px !important;
+            overflow-x: auto !important;
             overflow-y: auto !important;
+            padding: 16px !important; 
+            padding-right: 90px !important; 
           }
           #mq-field-root .mq-editable-field {
             border: none !important;
             box-shadow: none !important;
             outline: none !important;
-            display: flex !important;
-            align-items: center !important;
+            display: block !important; 
             width: 100% !important;
-            min-height: 80px !important;
+            min-height: 100% !important;
             max-width: 100% !important;
-            padding: 0 100px 0 16px !important;
+            padding: 0 !important; 
             font-size: 20px !important;
-            line-height: 1.2 !important;
+            font-weight: 700 !important; /* Bold default */
             color: #111827 !important;
             background: transparent !important;
             cursor: text;
-            overflow-x: hidden !important;
-            overflow-y: visible !important;
+            overflow: visible !important;
             word-wrap: break-word !important;
           }
           #mq-field-root .mq-root-block {
             display: inline-block !important;
-            vertical-align: middle !important;
-            line-height: 1.2 !important;
+            vertical-align: top !important;
+            font-weight: 700 !important;
           }
           #mq-field-root .mq-editable-field.mq-focused {
             box-shadow: none !important;
@@ -310,6 +342,7 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
           #mq-field-root .mq-math-mode,
           #mq-field-root .mq-math-mode * {
             color: #111827 !important;
+            font-weight: 700 !important;
           }
           #mq-field-root .mq-cursor {
             border-left: 2px solid #2563eb !important;
@@ -332,8 +365,10 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
           #mq-field-root .mq-sup,
           #mq-field-root .mq-sub {
             color: #111827 !important;
-            font-size: 0.65em !important;
-          }
+            font-size: 0.9em !important; /* Adjusted degree size down per request */
+          } 
+
+
           #mq-field-root .mq-root-block,
           #mq-field-root .mq-sqrt-prefix,
           #mq-field-root .mq-nthroot {
@@ -354,9 +389,13 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
             background: transparent !important;
           }
           #mq-field-root .mq-paren,
-          #mq-field-root .mq-bracket-l,
+          #mq-field-root .mq-bracket-l, 
           #mq-field-root .mq-bracket-r {
             color: #374151 !important;
+            padding: 0 1px !important;
+            font-weight: 700 !important;
+            font-size: 0.75em !important; /* Decreases the size of the brackets */
+            vertical-align: baseline !important;
           }
           #mq-field-root .mq-sup .mq-operator-name {
             font-size: 1.4em !important;
@@ -505,6 +544,22 @@ function MathKeyboard({ mathInputRef, isVisible = true, onClose }: MathKeyboardP
                 <Key id="pow" action={{ type: "cmd", arg: "^" }} title="Power"><span><em>a</em><sup><em>b</em></sup></span></Key>
                 <Key id="lp" action={{ type: "typed", arg: "(" }} title="(">(</Key>
                 <Key id="rp" action={{ type: "typed", arg: ")" }} title=")">)</Key>
+                
+                {/* FIX: Simplified virtual key to guarantee no crashes */}
+                <Key 
+                  id="system" 
+                  action={{ 
+                    type: "custom", 
+                    fn: (mf) => { 
+                      mf.write("\\left\\{\\right."); 
+                      mf.keystroke("Left"); 
+                    } 
+                  }} 
+                  title="System of Equations"
+                >
+                  <span className="text-xl">{`{`}</span>
+                </Key>
+
                 <Key id="lt" action={{ type: "typed", arg: "<" }} title="Less than">&lt;</Key>
                 <Key id="gt" action={{ type: "typed", arg: ">" }} title="Greater than">&gt;</Key>
                 <Key id="abs" action={{ type: "typed", arg: "|" }} title="Absolute value"><span>|<em>a</em>|</span></Key>
@@ -526,9 +581,24 @@ function MathKeyboard({ mathInputRef, isVisible = true, onClose }: MathKeyboardP
             ) : (
               <>
                 <Key id="neq" action={{ type: "write", arg: "\\ne" }}>≠</Key>
-                <Key id="int" action={{ type: "write", arg: "\\int" }}>∫</Key>
+                
+                {/* FIXED: Replaced \\int with literal typed symbol so limit boxes do not appear */}
+                <Key id="int" action={{ type: "typed", arg: "∫" }}><span className="text-2xl">∫</span></Key>
+                
                 <Key id="deg" action={{ type: "write", arg: "^{\\circ}" }}><span className="text-2xl">°</span></Key>
-                <Key id="cases" action={{ type: "custom", fn: (mf) => { mf.write("\\begin{cases}\\\\\\end{cases}"); mf.keystroke("Up"); } }}><span className="text-xl">{`{`}</span></Key>
+                
+<Key 
+  id="cases" 
+  action={{ 
+    type: "custom", 
+    fn: (mf) => { 
+      mf.typedText("{"); // 🔥 faqat oddiy {
+    } 
+  }}
+>
+  <span className="text-xl">{`{`}</span>
+</Key>
+
                 <Key id="emptyset" action={{ type: "write", arg: "\\emptyset" }}>∅</Key>
                 <Key id="perp" action={{ type: "write", arg: "\\perp" }}><span className="text-lg font-bold">⊥</span></Key>
                 <Key id="in" action={{ type: "write", arg: "\\in" }}>∈</Key>
