@@ -302,17 +302,19 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
           </div>
         </div>
 
-        <style>{`
-          #mq-field-root {
+       <style>{`
+      #mq-field-root {
             display: block !important; 
             width: 100% !important;
             min-height: 120px !important;
             max-height: 400px !important;
             overflow-x: auto !important;
             overflow-y: auto !important;
-            padding: 16px !important; 
-            padding-right: 90px !important; 
+            /* Keep UI side paddings */
+            padding-left: 32px !important; 
+            padding-right: 90px !important;
           }
+
           #mq-field-root .mq-editable-field {
             border: none !important;
             box-shadow: none !important;
@@ -321,82 +323,109 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
             width: 100% !important;
             min-height: 100% !important;
             max-width: 100% !important;
+            
+            /* Remove the padding from here so we can center it in the root block */
             padding: 0 !important; 
+
             font-size: 20px !important;
-            font-weight: 700 !important; /* Bold default */
+            font-weight: 700 !important;
             color: #111827 !important;
             background: transparent !important;
             cursor: text;
             overflow: visible !important;
             word-wrap: break-word !important;
           }
+
           #mq-field-root .mq-root-block {
             display: inline-block !important;
-            vertical-align: top !important;
             font-weight: 700 !important;
+            
+            /* 🔥 THE FIX: Push the typing area into the vertical center */
+            /* This gives 35px of safe space at the top for tall superscripts */
+            padding-top: 35px !important; 
+            padding-bottom: 35px !important; 
           }
+
+          #mq-field-root .mq-nthroot {
+            margin-left: 4px !important;
+          }
+
+       
+
+       
+
           #mq-field-root .mq-editable-field.mq-focused {
             box-shadow: none !important;
             outline: none !important;
           }
+
           #mq-field-root .mq-math-mode,
           #mq-field-root .mq-math-mode * {
             color: #111827 !important;
             font-weight: 700 !important;
           }
+
           #mq-field-root .mq-cursor {
             border-left: 2px solid #2563eb !important;
           }
+
           #mq-field-root .mq-selection,
           #mq-field-root .mq-selection .mq-non-leaf,
           #mq-field-root .mq-selection span {
             background-color: rgba(37, 99, 235, 0.15) !important;
             color: #111827 !important;
           }
+
           #mq-field-root .mq-fraction .mq-fraction-line,
           #mq-field-root .mq-numerator,
           #mq-field-root .mq-denominator {
             color: #111827 !important;
           }
+
           #mq-field-root .mq-fraction .mq-fraction-line {
             border-top-color: #111827 !important;
             border-top-width: 1.5px !important;
           }
+
           #mq-field-root .mq-sup,
           #mq-field-root .mq-sub {
             color: #111827 !important;
-            font-size: 0.9em !important; /* Adjusted degree size down per request */
+            font-size: 0.9em !important; 
           } 
 
-
-          #mq-field-root .mq-root-block,
           #mq-field-root .mq-sqrt-prefix,
           #mq-field-root .mq-nthroot {
             color: #111827 !important;
           }
+
           #mq-field-root .mq-nthroot .mq-sup {
             font-size: 0.6em !important;
             color: #111827 !important;
           }
+
           #mq-field-root .mq-nthroot > .mq-sup-only {
             margin-right: 0.1em !important;
           }
+
           #mq-field-root .mq-empty .mq-root-block:before {
             content: '';
           }
+
           #mq-field-root .mq-non-leaf,
           #mq-field-root .mq-array.mq-non-leaf {
             background: transparent !important;
           }
+
           #mq-field-root .mq-paren,
           #mq-field-root .mq-bracket-l, 
           #mq-field-root .mq-bracket-r {
             color: #374151 !important;
             padding: 0 1px !important;
             font-weight: 700 !important;
-            font-size: 0.75em !important; /* Decreases the size of the brackets */
+            font-size: 0.75em !important;
             vertical-align: baseline !important;
           }
+
           #mq-field-root .mq-sup .mq-operator-name {
             font-size: 1.4em !important;
           }
