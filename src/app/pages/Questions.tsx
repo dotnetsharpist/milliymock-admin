@@ -36,6 +36,39 @@ type QuestionListItem = ApiQuestion & {
   score?: number | null;
 };
 
+// Helper function to clean up MathQuill's raw LaTeX string for rendering
+const cleanMathText = (text?: string | null) => {
+  if (!text) return "";
+  const cleaned = text
+    .replace(/\\\\/g, '\\') // Unescape double backslashes
+    .replace(/\\ /g, ' ')   // Convert MathQuill space commands (\ ) to normal spaces
+    .trim();                // Clean up any leading/trailing whitespace
+
+  if (!cleaned) return "";
+
+  const alreadyDelimited =
+    cleaned.includes("\\(") ||
+    cleaned.includes("\\[") ||
+    cleaned.includes("$$");
+
+  if (alreadyDelimited) {
+    return cleaned;
+  }
+
+  const rawLatexStart = cleaned.match(/\\[a-zA-Z]+/);
+  if (!rawLatexStart || rawLatexStart.index === undefined) {
+    return cleaned;
+  }
+
+  const prefix = cleaned.slice(0, rawLatexStart.index);
+  const mathTail = cleaned.slice(rawLatexStart.index).trim();
+
+  if (!mathTail) {
+    return cleaned;
+  }
+
+  return `${prefix}\\(${mathTail}\\)`;
+};
 
 export function Questions() {
   const navigate = useNavigate();
@@ -167,7 +200,8 @@ export function Questions() {
 
           setOptionsModalQuestion({
             id: question.id,
-            text: question.translations[0].text,
+            // Use the clean helper for the modal title
+            text: cleanMathText(question.translations[0].text),
           });
           setQuestionOptions(options);
           setIsOptionsModalOpen(true);
@@ -336,29 +370,30 @@ export function Questions() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                           {question.translations?.[0]?.imagePath ? (
-  <div className="w-12 h-12 rounded-md overflow-hidden border border-neutral-200">
-    <img
-      src={getImageUrl(question.translations?.[0]?.imagePath)}
-      alt="Question preview"
-      className="w-full h-full object-cover"
-    />
-  </div>
-) : (
-  <div className="w-12 h-12 rounded-md bg-neutral-100 flex items-center justify-center">
-    <ImageIcon className="w-5 h-5 text-neutral-400" />
-  </div>
-)}
+                            <div className="w-12 h-12 rounded-md overflow-hidden border border-neutral-200">
+                              <img
+                                src={getImageUrl(question.translations?.[0]?.imagePath)}
+                                alt="Question preview"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-12 h-12 rounded-md bg-neutral-100 flex items-center justify-center">
+                              <ImageIcon className="w-5 h-5 text-neutral-400" />
+                            </div>
+                          )}
                           </td>
                          <td className="px-6 py-4 text-sm">
-  {question.translations?.[0]?.text ? (
-    <MathText
-      value={question.translations[0].text}
-      className="max-w-md truncate text-neutral-900"
-    />
-  ) : (
-    <span className="text-neutral-400">No text</span>
-  )}
-</td>
+                          {question.translations?.[0]?.text ? (
+                            <MathText
+                              // Use the cleanMathText helper
+                              value={cleanMathText(question.translations[0].text)}
+                              className="max-w-md truncate text-neutral-900"
+                            />
+                          ) : (
+                            <span className="text-neutral-400">No text</span>
+                          )}
+                        </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             {getTypeBadge(question.type as QuestionType)}
                           </td>

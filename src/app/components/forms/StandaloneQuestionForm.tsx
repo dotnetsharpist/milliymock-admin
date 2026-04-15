@@ -155,7 +155,9 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
           supSubsRequireOperand: false,
           charsThatBreakOutOfSupSub: "+-=<>",
           autoCommands: "theta sqrt nthroot",
-          autoOperatorNames: "sin cos tan ln log",
+          // The fix: We must provide a string of ONLY letters to pass validation. 
+          // "dummyop" overwrites the default list and will never be typed naturally.
+          autoOperatorNames: "dummyop", 
           handlers: {
             edit: () => {
               onInput?.(mf.latex());
@@ -305,9 +307,6 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
           </div>
         </div>
 
-        {/* IMPORTANT: Changed #mq-field-root to .mq-field-root to avoid ID clashing 
-          which breaks styling when multiple MathInputs are present! 
-        */}
         <style>{`
           .mq-field-root {
             display: block !important; 
