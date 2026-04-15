@@ -335,26 +335,30 @@ export function Questions() {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {question.translations[0].imagePath ? (
-                              <div className="w-12 h-12 rounded-md overflow-hidden border border-neutral-200">
-                                <img
-                                  src={getImageUrl(question.translations[0].imagePath)}
-                                  alt="Question preview"
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                            ) : (
-                              <div className="w-12 h-12 rounded-md bg-neutral-100 flex items-center justify-center">
-                                <ImageIcon className="w-5 h-5 text-neutral-400" />
-                              </div>
-                            )}
+                          {question.translations?.[0]?.imagePath ? (
+  <div className="w-12 h-12 rounded-md overflow-hidden border border-neutral-200">
+    <img
+      src={getImageUrl(question.translations?.[0]?.imagePath)}
+      alt="Question preview"
+      className="w-full h-full object-cover"
+    />
+  </div>
+) : (
+  <div className="w-12 h-12 rounded-md bg-neutral-100 flex items-center justify-center">
+    <ImageIcon className="w-5 h-5 text-neutral-400" />
+  </div>
+)}
                           </td>
-                          <td className="px-6 py-4 text-sm">
-                            <MathText
-                              value={question.translations[0].text}
-                              className="max-w-md truncate text-neutral-900"
-                            />
-                          </td>
+                         <td className="px-6 py-4 text-sm">
+  {question.translations?.[0]?.text ? (
+    <MathText
+      value={question.translations[0].text}
+      className="max-w-md truncate text-neutral-900"
+    />
+  ) : (
+    <span className="text-neutral-400">No text</span>
+  )}
+</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             {getTypeBadge(question.type as QuestionType)}
                           </td>
