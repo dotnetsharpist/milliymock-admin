@@ -56,9 +56,15 @@ export function QuestionGroups() {
         setIsModalOpen(true);
     };
 
-    const handleDelete = (groupId: string) => {
-        setGroups(groups.filter((g) => g.id !== groupId));
-        toast.success("Question group deleted successfully");
+    const handleDelete = async (groupId: string) => {
+        const res = await questionGroupService.deleteQuestionGroup(groupId);
+
+        if (res.success) {
+            setGroups(groups.filter((g) => g.id !== groupId));
+            toast.success("Question group deleted successfully");
+        } else {
+            toast.error(res.error || "Failed to delete question group");
+        }
     };
 
     const handleSave = (group: QuestionGroup) => {
