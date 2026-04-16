@@ -4,9 +4,18 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
-import { Test } from "../../data/mockData";
+import { Test, Status } from "../../models/tests";
 import { testService } from "../../services";
 import { toast } from "sonner";
+
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "../ui/select";
+
 
 interface TestModalProps {
   isOpen: boolean;
@@ -16,22 +25,29 @@ interface TestModalProps {
 }
 
 export function TestModal({ isOpen, onClose, onSave, test }: TestModalProps) {
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-  });
-  const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState<{
+        title: string;
+        description: string;
+        status: Status | "";
+    }>({
+        title: "",
+        description: "",
+        status: "",
+    });
+    const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (test) {
       setFormData({
         title: test.title,
         description: test.description || "",
+        status: test.status
       });
     } else {
       setFormData({
         title: "",
         description: "",
+        status: "",
       });
     }
   }, [test, isOpen]);
@@ -41,13 +57,18 @@ export function TestModal({ isOpen, onClose, onSave, test }: TestModalProps) {
     setLoading(true);
 
     try {
-      const payload = {
-        title: formData.title,
-        description: formData.description.trim() || null,
-      };
-
+        const payload = {
+            title: formData.title,
+            description: formData.description.trim() || null,
+            ...(test && { status: formData.status }),
+        };
       if (test) {
         // Update existing test
+          if (!formData.status) {
+              toast.error("Please select a status");
+              setLoading(false);
+              return;
+          }
         const response = await testService.updateTest(test.id, payload);
         if (response.success && response.data) {
           toast.success("Test updated successfully");
@@ -106,6 +127,33 @@ export function TestModal({ isOpen, onClose, onSave, test }: TestModalProps) {
               rows={4}
             />
           </div>
+            {test && (
+                <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+
+                    <Select
+                        value={formData.status}
+                        onValueChange={(value) =>
+                            setFormData((prev) => ({
+                                ...prev,
+                                status: value as Status,
+                            }))
+                        }
+                        disabled={loading}
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+
+                        <SelectContent>
+                            <SelectItem value="Draft">Draft</SelectItem>
+                            <SelectItem value="Published">Published</SelectItem>
+                            <SelectItem value="Archived">Archived</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            )}
+
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel

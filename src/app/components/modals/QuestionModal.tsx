@@ -150,23 +150,27 @@ export function QuestionModal({
 
                         <div className="space-y-2">
                             <Label htmlFor="score">Score</Label>
-                            <Input
-                                id="score"
-                                type="number"
-                                min="0"
-                                step="0.1"
-                                value={formData.score}
-                                onChange={(e) => {
-                                    const value = e.target.value;
 
+                            <Select
+                                value={formData.score?.toString() ?? ""}
+                                onValueChange={(value) =>
                                     setFormData({
                                         ...formData,
-                                        score: value === "" ? "" : parseFloat(value),
-                                    });
-                                }}
-                                className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                required
-                            />
+                                        score: parseFloat(value),
+                                    })
+                                }
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select score" />
+                                </SelectTrigger>
+
+                                <SelectContent>
+                                    <SelectItem value="1.3">1.3</SelectItem>
+                                    <SelectItem value="1.5">1.5</SelectItem>
+                                    <SelectItem value="1.7">1.7</SelectItem>
+                                    <SelectItem value="2.2">2.2</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div className="space-y-2">

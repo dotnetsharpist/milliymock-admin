@@ -1,21 +1,13 @@
 import { apiService, ApiResponse } from "./apiService";
 import { API_ENDPOINTS } from "../config/api";
-import { Test } from "../data/mockData";
+
+import { CreateTestData, UpdateTestData, Test} from "../models/tests";
 
 /**
  * Test Service
  * Handles all test-related API calls
  */
 
-export interface CreateTestData {
-  title: string;
-  description: string | null;
-}
-
-export interface UpdateTestData {
-  title: string;
-  description: string | null;
-}
 
 export const testService = {
   /**

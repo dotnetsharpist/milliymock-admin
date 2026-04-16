@@ -2,7 +2,7 @@ import {useState, useEffect} from "react";
 import {Button} from "../components/ui/button";
 import {Plus, Edit, Trash2} from "lucide-react";
 import {DataTable, Column} from "../components/DataTable";
-import {Test} from "../data/mockData";
+import {Test} from "../models/tests";
 import {TestModal} from "../components/modals/TestModal";
 import {toast} from "sonner";
 import {testService} from "../services";
@@ -89,6 +89,17 @@ export function Tests() {
         </span>
             ),
         },
+        {
+            header: "Test Status",
+            accessor: (test) => (
+                <span
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          {test.status}
+        </span>
+            ),
+        },
+
+
         {
             header: "Actions",
             accessor: (test) => (
