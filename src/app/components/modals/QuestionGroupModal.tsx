@@ -1,11 +1,9 @@
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "../ui/dialog";
 import {Button} from "../ui/button";
-import {Input} from "../ui/input";
 import {Label} from "../ui/label";
 import {FileUpload} from "../ui/file-upload";
 import {QuestionGroup, QuestionGroupFormData} from "../../models/questionGroups";
-import {Test} from "../../models/tests";
 import {testService} from "../../services/testService";
 import { questionGroupService} from "../../services";
 import {
@@ -17,8 +15,12 @@ import {
 } from "../ui/select";
 import {BASE_URL} from "../../config/api";
 import {toast} from "sonner";
-import {Question} from "../../models/questions";
-import {Option} from "../../models/options";
+import {
+    MathQuillInput,
+    MathQuillKeyboard,
+    type MathInputHandle,
+} from "../math/MathQuillField";
+
 interface QuestionGroupModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -58,10 +60,24 @@ export function QuestionGroupModal({isOpen, onClose, onSave, group}: QuestionGro
     const [imagePreviewRu, setImagePreviewRu] = useState<string | undefined>(undefined);
     const [isLoadingTests, setIsLoadingTests] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const mathInputUzRef = useRef<MathInputHandle>(null);
+    const mathInputRuRef = useRef<MathInputHandle>(null);
+    const [activeInputFocus, setActiveInputFocus] = useState<"uz" | "ru">("uz");
+    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+    const activeMathRef =
+        activeInputFocus === "ru" ? mathInputRuRef : mathInputUzRef;
 
     useEffect(() => {
         if (isOpen) {
             fetchTests();
+        }
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (!isOpen) {
+            setIsKeyboardVisible(false);
+            setActiveInputFocus("uz");
         }
     }, [isOpen]);
 
@@ -168,6 +184,17 @@ export function QuestionGroupModal({isOpen, onClose, onSave, group}: QuestionGro
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!formData.testId) {
+            toast.error("Please select a test");
+            return;
+        }
+
+        if (!formData.textUz.trim() || !formData.textRu.trim()) {
+            toast.error("Please fill in both question group titles");
+            return;
+        }
+
         setIsSubmitting(true);
 
         const newGroup: QuestionGroupFormData = {
@@ -207,7 +234,7 @@ export function QuestionGroupModal({isOpen, onClose, onSave, group}: QuestionGro
                         {group ? "Update the question group details below." : "Create a new question group within a test."}
                     </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className={`space-y-4 ${isKeyboardVisible ? "pb-[300px]" : ""}`}>
                     <div className="space-y-2">
                         <Label htmlFor="test">Test</Label>
                         <Select
@@ -228,31 +255,37 @@ export function QuestionGroupModal({isOpen, onClose, onSave, group}: QuestionGro
                         </Select>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="title">Group Title (UZ)</Label>
-                        <Input
-                            id="title"
-                            value={formData.textUz}
-                            onChange={(e) =>
-                                setFormData({...formData, textUz: e.target.value})
-                            }
-                            placeholder="e.g., Array Methods Group"
-                            required
-                        />
-                    </div>
+                    <MathQuillInput
+                        key={`group-title-uz-${group?.id ?? "new"}-${isOpen ? "open" : "closed"}`}
+                        ref={mathInputUzRef}
+                        label="Group Title (UZ)"
+                        initialValue={formData.textUz}
+                        onInput={(latex) =>
+                            setFormData((prev) => ({...prev, textUz: latex}))
+                        }
+                        onFocus={() => setActiveInputFocus("uz")}
+                        onToggleKeyboard={() => {
+                            setActiveInputFocus("uz");
+                            setIsKeyboardVisible((prev) => !prev);
+                        }}
+                        disabled={isSubmitting}
+                    />
 
-                    <div className="space-y-2">
-                        <Label htmlFor="title">Group Title (RU)</Label>
-                        <Input
-                            id="title"
-                            value={formData.textRu}
-                            onChange={(e) =>
-                                setFormData({...formData, textRu: e.target.value})
-                            }
-                            placeholder="e.g., Array Methods Group"
-                            required
-                        />
-                    </div>
+                    <MathQuillInput
+                        key={`group-title-ru-${group?.id ?? "new"}-${isOpen ? "open" : "closed"}`}
+                        ref={mathInputRuRef}
+                        label="Group Title (RU)"
+                        initialValue={formData.textRu}
+                        onInput={(latex) =>
+                            setFormData((prev) => ({...prev, textRu: latex}))
+                        }
+                        onFocus={() => setActiveInputFocus("ru")}
+                        onToggleKeyboard={() => {
+                            setActiveInputFocus("ru");
+                            setIsKeyboardVisible((prev) => !prev);
+                        }}
+                        disabled={isSubmitting}
+                    />
 
                     <div className="space-y-2">
                         <Label>Image UZ (optional)</Label>
@@ -286,6 +319,12 @@ export function QuestionGroupModal({isOpen, onClose, onSave, group}: QuestionGro
                             {group ? "Update" : "Create"}
                         </Button>
                     </div>
+
+                    <MathQuillKeyboard
+                        mathInputRef={activeMathRef}
+                        isVisible={isKeyboardVisible && !isSubmitting}
+                        onClose={() => setIsKeyboardVisible(false)}
+                    />
                 </form>
             </DialogContent>
         </Dialog>

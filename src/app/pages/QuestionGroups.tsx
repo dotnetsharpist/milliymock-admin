@@ -4,7 +4,7 @@ import {Button} from "../components/ui/button";
 import {Plus, Edit, Trash2, ChevronRight} from "lucide-react";
 import {DataTable, Column} from "../components/DataTable";
 import {mockTests} from "../data/mockData";
-import {QuestionGroup, QuestionGroupFormData} from "../models/questionGroups";
+import {QuestionGroup} from "../models/questionGroups";
 import {QuestionGroupModal} from "../components/modals/QuestionGroupModal";
 import {TestFilter} from "../components/TestFilter";
 import {toast} from "sonner";
@@ -47,8 +47,10 @@ export function QuestionGroups() {
 
 
     const handleCreate = () => {
-        setEditingGroup(undefined);
-        setIsModalOpen(true);
+        const nextHref = selectedTestId
+            ? `/question-groups/new?testId=${selectedTestId}`
+            : "/question-groups/new";
+        navigate(nextHref);
     };
 
     const handleEdit = (group: QuestionGroup) => {

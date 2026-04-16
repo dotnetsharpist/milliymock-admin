@@ -5,6 +5,7 @@ import { Tests } from "./pages/Tests";
 import { Questions } from "./pages/Questions";
 import { QuestionCreate } from "./pages/QuestionCreate";
 import { QuestionGroups } from "./pages/QuestionGroups";
+import { QuestionGroupCreate } from "./pages/QuestionGroupCreate";
 import { QuestionGroupDetail } from "./pages/QuestionGroupDetail";
 import { Users } from "./pages/Users";
 import { Layout } from "./components/Layout";
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
       { path: "questions", Component: Questions },
       { path: "questions/new", Component: QuestionCreate },
       { path: "question-groups", Component: QuestionGroups },
+      { path: "question-groups/new", Component: QuestionGroupCreate },
       { path: "question-groups/:groupId", Component: QuestionGroupDetail },
       { path: "users", Component: Users },
     ],
