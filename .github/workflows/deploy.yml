@@ -1,0 +1,48 @@
+name: Deploy Docker App
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Notify via Telegram about the job start
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TG_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TG_USER_ID }} \
+          -d $'text=⏳ *Deploying Milliy Admin Frontend...*\n\nRepo: *${{ github.repository }}*\nActor: *${{ github.actor }}*\nMessage: *${{ github.event.head_commit.message }}*' \
+          -d parse_mode=Markdown
+
+      - name: Deploy on VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /home/deploy/milliymock-admin
+            
+            git pull origin master
+            
+            docker compose down
+            docker compose up -d --build
+
+      - name: Notify via Telegram on success
+        if: success()
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TG_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TG_USER_ID }} \
+          -d $'text=✅ *Milliy Admin Deploy successful!*\n\nRepo: *${{ github.repository }}*\nActor: *${{ github.actor }}*' \
+          -d parse_mode=Markdown
+
+      - name: Notify via Telegram on failure
+        if: failure()
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TG_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TG_USER_ID }} \
+          -d $'text=❌ *Docker Deploy failed!*' \
+          -d parse_mode=Markdown

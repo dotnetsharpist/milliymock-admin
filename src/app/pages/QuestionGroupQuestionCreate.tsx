@@ -270,26 +270,31 @@ export function QuestionGroupQuestionCreate() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="score">Score</Label>
-              <Input
-                id="score"
-                type="number"
-                min="0"
-                step="0.1"
-                value={formData.score}
-                onChange={(event) => {
-                  const nextValue = event.target.value;
-                  setFormData((prev) => ({
-                    ...prev,
-                    score: nextValue,
-                  }));
-                }}
-                className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
+              <div className="space-y-2">
+                  <Label htmlFor="score">Score</Label>
+
+                  <Select
+                      value={formData.score?.toString() ?? ""}
+                      onValueChange={(nextValue) =>
+                          setFormData((prev) => ({
+                              ...prev,
+                              score: parseFloat(nextValue),
+                          }))
+                      }
+                      disabled={isSubmitting}
+                  >
+                      <SelectTrigger>
+                          <SelectValue placeholder="Select score" />
+                      </SelectTrigger>
+
+                      <SelectContent>
+                          <SelectItem value="1.3">1.3</SelectItem>
+                          <SelectItem value="1.5">1.5</SelectItem>
+                          <SelectItem value="1.7">1.7</SelectItem>
+                          <SelectItem value="2.2">2.2</SelectItem>
+                      </SelectContent>
+                  </Select>
+              </div>
 
             <div className="space-y-2">
               <Label htmlFor="type">Question Type</Label>
