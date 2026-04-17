@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
 import { Button } from "./button";
 
@@ -23,6 +23,10 @@ export function FileUpload({
   const [preview, setPreview] = useState<string | undefined>(value);
   const [error, setError] = useState<string>("");
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    setPreview(value);
+  }, [value]);
 
   const validateFile = (file: File): string | null => {
     // Check file type

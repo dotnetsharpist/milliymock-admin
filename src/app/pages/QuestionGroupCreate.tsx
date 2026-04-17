@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
@@ -20,6 +20,7 @@ import { testService } from "../services/testService";
 import { questionGroupService } from "../services";
 import type { QuestionGroupFormData } from "../models/questionGroups";
 import { toast } from "sonner";
+import { BASE_URL } from "../config/api";
 
 interface NormalizedTestOption {
   id: string;
@@ -34,8 +35,10 @@ interface QuestionGroupCreateState {
 
 export function QuestionGroupCreate() {
   const navigate = useNavigate();
+  const { groupId } = useParams();
   const [searchParams] = useSearchParams();
   const selectedTestId = searchParams.get("testId");
+  const isEditMode = Boolean(groupId);
 
   const backHref = useMemo(() => "/question-groups", []);
 
@@ -46,9 +49,12 @@ export function QuestionGroupCreate() {
   });
   const [tests, setTests] = useState<NormalizedTestOption[]>([]);
   const [isLoadingTests, setIsLoadingTests] = useState(false);
+  const [isLoadingGroup, setIsLoadingGroup] = useState(isEditMode);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageFileUz, setImageFileUz] = useState<File | null>(null);
   const [imageFileRu, setImageFileRu] = useState<File | null>(null);
+  const [imagePreviewUz, setImagePreviewUz] = useState<string | undefined>();
+  const [imagePreviewRu, setImagePreviewRu] = useState<string | undefined>();
   const mathInputUzRef = useRef<MathInputHandle>(null);
   const mathInputRuRef = useRef<MathInputHandle>(null);
   const [activeInputFocus, setActiveInputFocus] = useState<"uz" | "ru">("uz");
@@ -60,6 +66,53 @@ export function QuestionGroupCreate() {
   useEffect(() => {
     void fetchTests();
   }, []);
+
+  useEffect(() => {
+    if (!isEditMode || !groupId) {
+      setIsLoadingGroup(false);
+      return;
+    }
+
+    void (async () => {
+      try {
+        setIsLoadingGroup(true);
+        const response = await questionGroupService.getQuestionGroupById(groupId);
+
+        if (!response.success || !response.data) {
+          toast.error("Question group not found");
+          navigate(backHref);
+          return;
+        }
+
+        const uzTranslation = response.data.translations?.find(
+          (translation) => translation.language === "Uzbek"
+        );
+        const ruTranslation = response.data.translations?.find(
+          (translation) => translation.language === "Russian"
+        );
+
+        setFormData({
+          testId: String(response.data.testId ?? ""),
+          textUz: uzTranslation?.text ?? "",
+          textRu: ruTranslation?.text ?? "",
+        });
+        setImagePreviewUz(
+          uzTranslation?.imagePath ? `${BASE_URL}${uzTranslation.imagePath}` : undefined
+        );
+        setImagePreviewRu(
+          ruTranslation?.imagePath ? `${BASE_URL}${ruTranslation.imagePath}` : undefined
+        );
+        setImageFileUz(null);
+        setImageFileRu(null);
+      } catch (error) {
+        console.error("Error loading question group:", error);
+        toast.error("Error loading question group");
+        navigate(backHref);
+      } finally {
+        setIsLoadingGroup(false);
+      }
+    })();
+  }, [backHref, groupId, isEditMode, navigate]);
 
   const fetchTests = async () => {
     try {
@@ -74,16 +127,18 @@ export function QuestionGroupCreate() {
 
         setTests(normalizedTests);
 
-        const preferredTestId =
-          selectedTestId &&
-          normalizedTests.some((test) => test.id === selectedTestId)
-            ? selectedTestId
-            : normalizedTests[0]?.id ?? "";
+        if (!isEditMode) {
+          const preferredTestId =
+            selectedTestId &&
+            normalizedTests.some((test) => test.id === selectedTestId)
+              ? selectedTestId
+              : normalizedTests[0]?.id ?? "";
 
-        setFormData((prev) => ({
-          ...prev,
-          testId: prev.testId || preferredTestId,
-        }));
+          setFormData((prev) => ({
+            ...prev,
+            testId: prev.testId || preferredTestId,
+          }));
+        }
       } else {
         toast.error("Failed to load tests");
         setTests([]);
@@ -120,21 +175,68 @@ export function QuestionGroupCreate() {
 
     try {
       setIsSubmitting(true);
-      const response = await questionGroupService.createQuestionGroup(payload);
+      const response = isEditMode && groupId
+        ? await questionGroupService.updateQuestionGroup(groupId, payload)
+        : await questionGroupService.createQuestionGroup(payload);
 
       if (response.success && response.data) {
-        toast.success("Question group created successfully");
+        toast.success(
+          isEditMode
+            ? "Question group updated successfully"
+            : "Question group created successfully"
+        );
         navigate(backHref);
       } else {
-        toast.error("Failed to create question group");
+        toast.error(
+          isEditMode
+            ? "Failed to update question group"
+            : "Failed to create question group"
+        );
       }
     } catch (error) {
-      console.error("Error creating question group:", error);
+      console.error("Error saving question group:", error);
       toast.error("Something went wrong");
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const handleImageChangeUz = (file: File | null) => {
+    setImageFileUz(file);
+  };
+
+  const handleImageChangeRu = (file: File | null) => {
+    setImageFileRu(file);
+  };
+
+  const handleImageRemoveUz = () => {
+    setImageFileUz(null);
+    setImagePreviewUz(undefined);
+  };
+
+  const handleImageRemoveRu = () => {
+    setImageFileRu(null);
+    setImagePreviewRu(undefined);
+  };
+
+  if (isEditMode && isLoadingGroup) {
+    return (
+      <div className="space-y-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate(backHref)}
+          className="mb-4"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Question Groups
+        </Button>
+        <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+          <p className="text-neutral-600">Loading question group...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -150,10 +252,10 @@ export function QuestionGroupCreate() {
         </Button>
 
         <h1 className="text-3xl font-semibold text-neutral-900">
-          Create Question Group
+          {isEditMode ? "Edit Question Group" : "Create Question Group"}
         </h1>
         <p className="mt-1 text-neutral-600">
-          Group title uchun math input va digital keyboard endi alohida page’da
+          Group title uchun math input va digital keyboard alohida page’da
           ishlaydi, shuning uchun modal cheklovi yo‘q.
         </p>
       </div>
@@ -188,9 +290,10 @@ export function QuestionGroupCreate() {
           </div>
 
           <MathQuillInput
+            key={`group-title-uz-${groupId ?? "new"}`}
             ref={mathInputUzRef}
             label="Group Title (UZ)"
-            initialValue=""
+            initialValue={formData.textUz}
             onInput={(latex) =>
               setFormData((prev) => ({ ...prev, textUz: latex }))
             }
@@ -203,9 +306,10 @@ export function QuestionGroupCreate() {
           />
 
           <MathQuillInput
+            key={`group-title-ru-${groupId ?? "new"}`}
             ref={mathInputRuRef}
             label="Group Title (RU)"
-            initialValue=""
+            initialValue={formData.textRu}
             onInput={(latex) =>
               setFormData((prev) => ({ ...prev, textRu: latex }))
             }
@@ -221,8 +325,9 @@ export function QuestionGroupCreate() {
             <div className="space-y-2">
               <Label>Image UZ (optional)</Label>
               <FileUpload
-                onChange={setImageFileUz}
-                onRemove={() => setImageFileUz(null)}
+                value={imagePreviewUz}
+                onChange={handleImageChangeUz}
+                onRemove={handleImageRemoveUz}
                 disabled={isSubmitting}
               />
               <p className="text-sm text-neutral-600">
@@ -234,8 +339,9 @@ export function QuestionGroupCreate() {
             <div className="space-y-2">
               <Label>Image RU (optional)</Label>
               <FileUpload
-                onChange={setImageFileRu}
-                onRemove={() => setImageFileRu(null)}
+                value={imagePreviewRu}
+                onChange={handleImageChangeRu}
+                onRemove={handleImageRemoveRu}
                 disabled={isSubmitting}
               />
               <p className="text-sm text-neutral-600">
@@ -255,7 +361,13 @@ export function QuestionGroupCreate() {
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create"}
+              {isSubmitting
+                ? isEditMode
+                  ? "Updating..."
+                  : "Creating..."
+                : isEditMode
+                ? "Update"
+                : "Create"}
             </Button>
           </div>
 

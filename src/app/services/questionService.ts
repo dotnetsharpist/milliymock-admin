@@ -130,6 +130,9 @@ export const questionService = {
         formData.append("TextUz", data.textUz);
         formData.append("TextRu", data.textRu);
 
+        if (data.correctOptionId) {
+            formData.append("CorrectOptionId", data.correctOptionId.toString());
+        }
         if (data.correctAnswer) {
             formData.append("CorrectAnswer", data.correctAnswer);
         }
@@ -138,6 +141,36 @@ export const questionService = {
         }
 
         return await apiService.upload<QuestionGroupQuestionCreate>(API_ENDPOINTS.STANDALONE_QUESTIONS, formData);
+    },
+
+    async updateQuestionGroupQuestion(
+        id: string,
+        data: QuestionGroupQuestionCreate
+    ): Promise<ApiResponse<QuestionGroupQuestionCreate>> {
+        const formData = new FormData();
+
+        formData.append("Order", data.order.toString());
+        formData.append("Score", data.score.toString().replace(",", "."));
+        formData.append("Type", data.type.toString());
+        formData.append("TextUz", data.textUz);
+        formData.append("TextRu", data.textRu);
+
+        if (data.correctOptionId) {
+            formData.append("CorrectOptionId", data.correctOptionId.toString());
+        }
+
+        if (data.correctAnswer) {
+            formData.append("CorrectAnswer", data.correctAnswer);
+        }
+
+        if (data.questionGroupId) {
+            formData.append("QuestionGroupId", data.questionGroupId.toString());
+        }
+
+        return await apiService.uploadPut<QuestionGroupQuestionCreate>(
+            API_ENDPOINTS.STANDALONE_QUESTION_BY_ID(id),
+            formData
+        );
     }
 };
 

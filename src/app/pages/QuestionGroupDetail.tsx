@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate, useSearchParams } from "react-router";
 import { Button } from "../components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Plus, Edit, Trash2, ArrowLeft } from "lucide-react";
@@ -33,27 +33,52 @@ export interface QuestionData {
 
 import { QuestionGroupDetailModel } from "../models/questionGroups";
 import { questionGroupService} from "../services";
-
-
-import { QuestionModal } from "../components/modals/QuestionModal";
 import { OptionModal } from "../components/modals/OptionModal";
 import { toast } from "sonner";
 import { ImageIcon } from "lucide-react";
 import { BASE_URL } from "../config/api";
-import {QuestionFormData} from "../models/questions";
+import { MathText } from "../components/math/MathText";
 
 export function QuestionGroupDetail() {
   const { groupId } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [group, setGroup] = useState<QuestionGroupDetailModel | null>(null);
   const [questions, setQuestions] = useState<Question[]> ([]);
   const [options, setOptions] = useState<Option[]>([]);
 
-  const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
   const [isOptionModalOpen, setIsOptionModalOpen] = useState(false);
-  const [editingQuestion, setEditingQuestion] = useState<Question | undefined>();
   const [editingOption, setEditingOption] = useState<Option | undefined>();
+  const activeTab = searchParams.get("tab") === "options" ? "options" : "questions";
+
+  const normalizeMathPreviewText = (text?: string | null) => {
+    if (!text) return "";
+
+    const cleaned = text
+      .replace(/\\\\/g, "\\")
+      .replace(/\\ /g, " ")
+      .trim();
+
+    if (!cleaned) return "";
+
+    if (
+      cleaned.includes("\\(") ||
+      cleaned.includes("\\[") ||
+      cleaned.includes("$$")
+    ) {
+      return cleaned;
+    }
+
+    const rawLatexStart = cleaned.match(/\\[a-zA-Z]+/);
+    if (!rawLatexStart || rawLatexStart.index === undefined) {
+      return cleaned;
+    }
+
+    const prefix = cleaned.slice(0, rawLatexStart.index);
+    const mathTail = cleaned.slice(rawLatexStart.index).trim();
+    return mathTail ? `${prefix}\\(${mathTail}\\)` : cleaned;
+  };
 
     useEffect(() => {
         if (!groupId) return;
@@ -96,13 +121,11 @@ export function QuestionGroupDetail() {
 
   // Question handlers
   const handleCreateQuestion = () => {
-    setEditingQuestion(undefined);
-    setIsQuestionModalOpen(true);
+    navigate(`/question-groups/${groupId}/questions/new`);
   };
 
   const handleEditQuestion = (question: Question) => {
-    setEditingQuestion(question);
-    setIsQuestionModalOpen(true);
+    navigate(`/question-groups/${groupId}/questions/${question.id}/edit`);
   };
 
   const handleDeleteQuestion = (questionId: string) => {
@@ -110,21 +133,9 @@ export function QuestionGroupDetail() {
     toast.success("Question deleted successfully");
   };
 
-  const handleSaveQuestion = (question: Question) => {
-    if (editingQuestion) {
-      setQuestions(questions.map((q) => (q.id === question.id ? question : q)));
-      toast.success("Question updated successfully");
-    } else {
-      setQuestions([...questions, question]);
-      toast.success("Question created successfully");
-    }
-    setIsQuestionModalOpen(false);
-  };
-
   // Option handlers
   const handleCreateOption = () => {
-    setEditingOption(undefined);
-    setIsOptionModalOpen(true);
+    navigate(`/question-groups/${groupId}/options/new`);
   };
 
   const handleEditOption = (option: Option) => {
@@ -164,7 +175,10 @@ export function QuestionGroupDetail() {
     {
       header: "Question Text",
       accessor: (q) => (
-        <span className="block max-w-md truncate">{q.translations?.[0]?.text ?? "No translation"}</span>
+        <MathText
+          value={normalizeMathPreviewText(q.translations?.[0]?.text)}
+          className="max-w-md text-neutral-900"
+        />
       )
     },
     {
@@ -182,9 +196,15 @@ export function QuestionGroupDetail() {
     {
       header: "Correct Answer",
       accessor: (q) => (
-        <span className="text-sm text-neutral-600">
-          {q.type === "Matching" ? getCorrectOptionText(q.correctOptionId) : q.correctAnswer}
-        </span>
+        <MathText
+          as="span"
+          value={normalizeMathPreviewText(
+            q.type === "Matching"
+              ? getCorrectOptionText(q.correctOptionId)
+              : q.correctAnswer
+          )}
+          className="text-sm text-neutral-600"
+        />
       ),
     },
     {
@@ -205,7 +225,13 @@ export function QuestionGroupDetail() {
   const optionColumns: Column<Option>[] = [
     {
       header: "Option Text",
-      accessor: "text",
+      accessor: (option) => (
+        <MathText
+          as="span"
+          value={normalizeMathPreviewText(option.text)}
+          className="text-neutral-900"
+        />
+      ),
     },
     {
       header: "Used By",
@@ -248,7 +274,10 @@ export function QuestionGroupDetail() {
 
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h1 className="text-3xl font-semibold text-neutral-900">{group.translations?.[0]?.text ?? "No translation" }</h1>
+            <MathText
+              value={normalizeMathPreviewText(group.translations?.[0]?.text)}
+              className="text-3xl font-semibold text-neutral-900"
+            />
             <p className="text-neutral-600 mt-1"> "Unknown" </p>
           </div>
           <div className="ml-6 rounded-lg border border-neutral-200 overflow-hidden bg-neutral-50">
@@ -270,7 +299,15 @@ export function QuestionGroupDetail() {
         </div>
       </div>
 
-      <Tabs defaultValue="questions" className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          const nextParams = new URLSearchParams(searchParams);
+          nextParams.set("tab", value);
+          setSearchParams(nextParams, { replace: true });
+        }}
+        className="space-y-6"
+      >
         <TabsList>
           <TabsTrigger value="questions">
             Questions ({questions.length})
@@ -310,16 +347,6 @@ export function QuestionGroupDetail() {
           />
         </TabsContent>
       </Tabs>
-
-      <QuestionModal
-        isOpen={isQuestionModalOpen}
-        onClose={() => setIsQuestionModalOpen(false)}
-        onSave={handleSaveQuestion}
-        question={editingQuestion}
-        groupId={groupId!}
-        availableOptions={options}
-      />
-
       <OptionModal
         isOpen={isOptionModalOpen}
         onClose={() => setIsOptionModalOpen(false)}

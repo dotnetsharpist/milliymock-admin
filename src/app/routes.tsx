@@ -7,6 +7,8 @@ import { QuestionCreate } from "./pages/QuestionCreate";
 import { QuestionGroups } from "./pages/QuestionGroups";
 import { QuestionGroupCreate } from "./pages/QuestionGroupCreate";
 import { QuestionGroupDetail } from "./pages/QuestionGroupDetail";
+import { QuestionGroupQuestionCreate } from "./pages/QuestionGroupQuestionCreate";
+import { QuestionGroupOptionCreate } from "./pages/QuestionGroupOptionCreate";
 import { Users } from "./pages/Users";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -26,7 +28,20 @@ export const router = createBrowserRouter([
       { path: "questions/new", Component: QuestionCreate },
       { path: "question-groups", Component: QuestionGroups },
       { path: "question-groups/new", Component: QuestionGroupCreate },
+      { path: "question-groups/:groupId/edit", Component: QuestionGroupCreate },
       { path: "question-groups/:groupId", Component: QuestionGroupDetail },
+      {
+        path: "question-groups/:groupId/questions/new",
+        Component: QuestionGroupQuestionCreate,
+      },
+      {
+        path: "question-groups/:groupId/questions/:questionId/edit",
+        Component: QuestionGroupQuestionCreate,
+      },
+      {
+        path: "question-groups/:groupId/options/new",
+        Component: QuestionGroupOptionCreate,
+      },
       { path: "users", Component: Users },
     ],
   },

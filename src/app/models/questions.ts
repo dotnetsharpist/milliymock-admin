@@ -19,6 +19,7 @@ export interface Question {
     type: QuestionType;
     testId: number;
     correctAnswer: string | null;
+    correctOptionId?: string | null;
     questionGroupId: number | null;
 }
 

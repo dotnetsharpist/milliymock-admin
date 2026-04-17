@@ -5,7 +5,6 @@ import {Plus, Edit, Trash2, ChevronRight} from "lucide-react";
 import {DataTable, Column} from "../components/DataTable";
 import {mockTests} from "../data/mockData";
 import {QuestionGroup} from "../models/questionGroups";
-import {QuestionGroupModal} from "../components/modals/QuestionGroupModal";
 import {TestFilter} from "../components/TestFilter";
 import {toast} from "sonner";
 import questionGroupService from "../services/questionGroupService";
@@ -15,8 +14,6 @@ export function QuestionGroups() {
     const navigate = useNavigate();
     const [groups, setGroups] = useState<QuestionGroup[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingGroup, setEditingGroup] = useState<QuestionGroup | undefined>();
     const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
 
 
@@ -54,8 +51,7 @@ export function QuestionGroups() {
     };
 
     const handleEdit = (group: QuestionGroup) => {
-        setEditingGroup(group);
-        setIsModalOpen(true);
+        navigate(`/question-groups/${group.id}/edit`);
     };
 
     const handleDelete = async (groupId: string) => {
@@ -67,17 +63,6 @@ export function QuestionGroups() {
         } else {
             toast.error(res.error || "Failed to delete question group");
         }
-    };
-
-    const handleSave = (group: QuestionGroup) => {
-        if (editingGroup) {
-            setGroups(groups.map((g) => (g.id === group.id ? group : g)));
-            toast.success("Question group updated successfully");
-        } else {
-            setGroups([...groups, group]);
-            toast.success("Question group created successfully");
-        }
-        setIsModalOpen(false);
     };
 
     const handleRowClick = (group: QuestionGroup) => {
@@ -184,13 +169,6 @@ export function QuestionGroups() {
                 searchPlaceholder="Search question groups..."
                 emptyMessage="No question groups found. Create your first group to get started."
                 onRowClick={handleRowClick}
-            />
-
-            <QuestionGroupModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSave={handleSave}
-                group={editingGroup}
             />
         </div>
     );

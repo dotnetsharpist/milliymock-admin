@@ -45,14 +45,41 @@ export const questionGroupService = {
         formData.append("testId", data.testId);
         formData.append("TitleUz", data.textUz);
         formData.append("TitleRu", data.textRu);
-        formData.append("ImageUz", data.imageUz);
-        formData.append("ImageRu", data.imageRu);
+        if (data.imageUz) {
+            formData.append("ImageUz", data.imageUz);
+        }
+        if (data.imageRu) {
+            formData.append("ImageRu", data.imageRu);
+        }
 
         return await apiService.upload<QuestionGroup>(
             API_ENDPOINTS.QUESTION_GROUPS,
             formData
         );
 
+    },
+
+    /**
+     * Update question group (with optional image upload)
+     */
+    async updateQuestionGroup(id: string, data: QuestionGroupFormData): Promise<ApiResponse<QuestionGroup>> {
+        const formData = new FormData();
+        formData.append("testId", data.testId);
+        formData.append("TitleUz", data.textUz);
+        formData.append("TitleRu", data.textRu);
+
+        if (data.imageUz) {
+            formData.append("ImageUz", data.imageUz);
+        }
+
+        if (data.imageRu) {
+            formData.append("ImageRu", data.imageRu);
+        }
+
+        return await apiService.uploadPut<QuestionGroup>(
+            API_ENDPOINTS.QUESTION_GROUP_BY_ID(id),
+            formData
+        );
     },
 
 
