@@ -4,6 +4,28 @@ import {StandaloneQuestion} from "../data/mockData";
 import {Question, QuestionFormData} from "../models/questions";
 import {QuestionGroupQuestionCreate} from "../models/questionGroups";
 
+const appendExplanationFields = (
+    formData: FormData,
+    explanation: QuestionFormData["explanation"] | QuestionGroupQuestionCreate["explanation"]
+) => {
+    if (!explanation) return;
+
+    const hasExplanation =
+        Boolean(explanation.textUz?.trim()) ||
+        Boolean(explanation.textRu?.trim()) ||
+        Boolean(explanation.videoLink?.trim()) ||
+        explanation.questionId !== undefined;
+
+    if (!hasExplanation) return;
+
+    formData.append("Explanation.TextUz", explanation.textUz ?? "");
+    formData.append("Explanation.TextRu", explanation.textRu ?? "");
+    formData.append("Explanation.VideoLink", explanation.videoLink ?? "");
+    formData.append(
+        "Explanation.QuestionId",
+        explanation.questionId?.toString() ?? "0"
+    );
+};
 
 export const questionService = {
     /**
@@ -57,6 +79,8 @@ export const questionService = {
             formData.append("QuestionGroupId", data.questionGroupId.toString());
         }
 
+        appendExplanationFields(formData, data.explanation);
+
         if (data.options) {
             data.options.forEach((opt, index) => {
                 formData.append(`Options[${index}].Text`, opt.text);
@@ -107,6 +131,8 @@ export const questionService = {
             formData.append("ImageRu", data.imageRu);
         }
 
+        appendExplanationFields(formData, data.explanation);
+
         // Use uploadPut for PUT request (multipart/form-data)
         return await apiService.uploadPut<Question>(
             API_ENDPOINTS.STANDALONE_QUESTION_BY_ID(id),
@@ -139,6 +165,8 @@ export const questionService = {
         if (data.questionGroupId) {
             formData.append("QuestionGroupId", data.questionGroupId.toString());
         }
+
+        appendExplanationFields(formData, data.explanation);
 
         return await apiService.upload<QuestionGroupQuestionCreate>(API_ENDPOINTS.STANDALONE_QUESTIONS, formData);
     },

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Play } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -22,6 +22,7 @@ import type { QuestionGroupQuestionCreate } from "../models/questionGroups";
 import { toast } from "sonner";
 import type { Option } from "../data/mockData";
 import type { QuestionGroupDetailModel } from "../models/questionGroups";
+import { getYouTubeThumbnailUrl } from "../lib/video";
 
 type QuestionType = "Matching" | "FreeAnswer";
 
@@ -49,6 +50,11 @@ export function QuestionGroupQuestionCreate() {
   const [availableOptions, setAvailableOptions] = useState<Option[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [explanation, setExplanation] = useState({
+    textUz: "",
+    textRu: "",
+    videoLink: "",
+  });
   const [formData, setFormData] = useState<QuestionFormState>({
     textUz: "",
     textRu: "",
@@ -61,9 +67,11 @@ export function QuestionGroupQuestionCreate() {
   const mathInputUzRef = useRef<MathInputHandle>(null);
   const mathInputRuRef = useRef<MathInputHandle>(null);
   const mathInputAnswerRef = useRef<MathInputHandle>(null);
-  const [activeInputFocus, setActiveInputFocus] = useState<"uz" | "ru" | "answer">(
-    "uz"
-  );
+  const mathInputExplanationUzRef = useRef<MathInputHandle>(null);
+  const mathInputExplanationRuRef = useRef<MathInputHandle>(null);
+  const [activeInputFocus, setActiveInputFocus] = useState<
+    "uz" | "ru" | "answer" | "explanation-uz" | "explanation-ru"
+  >("uz");
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   const activeMathRef =
@@ -71,6 +79,10 @@ export function QuestionGroupQuestionCreate() {
       ? mathInputRuRef
       : activeInputFocus === "answer"
       ? mathInputAnswerRef
+      : activeInputFocus === "explanation-uz"
+      ? mathInputExplanationUzRef
+      : activeInputFocus === "explanation-ru"
+      ? mathInputExplanationRuRef
       : mathInputUzRef;
 
   useEffect(() => {
@@ -128,6 +140,8 @@ export function QuestionGroupQuestionCreate() {
             order: (response.data.questions?.length ?? 0) + 1,
           }));
         }
+
+        setExplanation({ textUz: "", textRu: "", videoLink: "" });
       } catch (error) {
         console.error("Error loading question group:", error);
         toast.error("Error loading question group");
@@ -136,6 +150,8 @@ export function QuestionGroupQuestionCreate() {
       }
     })();
   }, [backHref, groupId, isEditMode, navigate, questionId]);
+
+  const explanationVideoThumbnail = getYouTubeThumbnailUrl(explanation.videoLink);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -178,6 +194,7 @@ export function QuestionGroupQuestionCreate() {
         formData.type === "Matching" ? formData.correctOptionId : undefined,
       correctAnswer:
         formData.type === "FreeAnswer" ? formData.correctAnswer : undefined,
+      explanation,
     };
 
     try {
@@ -193,6 +210,7 @@ export function QuestionGroupQuestionCreate() {
             ? "Question updated successfully"
             : "Question created successfully"
         );
+
         navigate(backHref);
       } else {
         toast.error(
@@ -401,6 +419,93 @@ export function QuestionGroupQuestionCreate() {
               }}
               disabled={isSubmitting}
             />
+          )}
+
+          {!isEditMode && (
+            <section className="space-y-4 rounded-xl border border-neutral-200 bg-neutral-50/60 p-4">
+              <Label className="text-base font-semibold text-neutral-900">
+                Question Explanation
+              </Label>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <MathQuillInput
+                  key={`group-question-explanation-uz-${questionId ?? "new"}`}
+                  ref={mathInputExplanationUzRef}
+                  label="Explanation Text UZ"
+                  initialValue={explanation.textUz}
+                  onInput={(latex) =>
+                    setExplanation((prev) => ({ ...prev, textUz: latex }))
+                  }
+                  onFocus={() => setActiveInputFocus("explanation-uz")}
+                  onToggleKeyboard={() => {
+                    setActiveInputFocus("explanation-uz");
+                    setIsKeyboardVisible((prev) => !prev);
+                  }}
+                  disabled={isSubmitting}
+                />
+
+                <MathQuillInput
+                  key={`group-question-explanation-ru-${questionId ?? "new"}`}
+                  ref={mathInputExplanationRuRef}
+                  label="Explanation Text RU"
+                  initialValue={explanation.textRu}
+                  onInput={(latex) =>
+                    setExplanation((prev) => ({ ...prev, textRu: latex }))
+                  }
+                  onFocus={() => setActiveInputFocus("explanation-ru")}
+                  onToggleKeyboard={() => {
+                    setActiveInputFocus("explanation-ru");
+                    setIsKeyboardVisible((prev) => !prev);
+                  }}
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="group-question-explanation-video">
+                  Video Link (optional)
+                </Label>
+                <Input
+                  id="group-question-explanation-video"
+                  type="url"
+                  value={explanation.videoLink}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  onChange={(event) =>
+                    setExplanation((prev) => ({
+                      ...prev,
+                      videoLink: event.target.value,
+                    }))
+                  }
+                  disabled={isSubmitting}
+                />
+
+                {explanation.videoLink.trim() && (
+                  <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
+                    {explanationVideoThumbnail ? (
+                      <div className="relative aspect-video bg-neutral-900">
+                        <img
+                          src={explanationVideoThumbnail}
+                          alt="Video thumbnail"
+                          className="h-full w-full object-cover"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-600 text-white shadow-lg">
+                            <Play className="ml-1 h-7 w-7 fill-current" />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex min-h-24 items-center px-4 text-sm text-neutral-600">
+                        Video preview unavailable for this link.
+                      </div>
+                    )}
+                    <div className="truncate px-3 py-2 text-sm text-neutral-700">
+                      {explanation.videoLink}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
           )}
 
           <div className="flex justify-end gap-2 pt-4">

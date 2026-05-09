@@ -31,12 +31,14 @@ import {
   Delete,
   CornerDownLeft,
   X,
+  Play,
 } from "lucide-react";
 import { questionService } from "../../services/questionService";
 import { optionService } from "../../services/optionService";
 import { testService } from "../../services/testService";
 import { toast } from "sonner";
 import { BASE_URL } from "../../config/api";
+import { getYouTubeThumbnailUrl } from "../../lib/video";
 
 // ─── MathQuill CDN Loader (Singleton) ────────────────────────────────────────
 
@@ -723,6 +725,11 @@ export interface StandaloneQuestionFormQuestion {
   order: number;
   score?: number | null;
   correctAnswer?: string | null;
+  explanation?: {
+    textUz?: string | null;
+    textRu?: string | null;
+    videoLink?: string | null;
+  } | null;
 }
 
 interface StandaloneQuestionFormState {
@@ -759,6 +766,14 @@ export function StandaloneQuestionForm({
   onCancel,
   onSuccess,
 }: StandaloneQuestionFormProps) {
+  const getInitialExplanation = (
+    currentQuestion?: StandaloneQuestionFormQuestion
+  ) => ({
+    textUz: currentQuestion?.explanation?.textUz ?? "",
+    textRu: currentQuestion?.explanation?.textRu ?? "",
+    videoLink: currentQuestion?.explanation?.videoLink ?? "",
+  });
+
   const [formData, setFormData] = useState<StandaloneQuestionFormState>({
     id: "",
     testId: "",
@@ -781,6 +796,7 @@ export function StandaloneQuestionForm({
   const [imageFileRu, setImageFileRu] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | undefined>();
   const [imagePreviewRu, setImagePreviewRu] = useState<string | undefined>();
+  const [explanation, setExplanation] = useState(getInitialExplanation(question));
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
@@ -788,6 +804,8 @@ export function StandaloneQuestionForm({
   // Focus & Keyboard State
   const mathInputUzRef = useRef<MathInputHandle>(null);
   const mathInputRuRef = useRef<MathInputHandle>(null);
+  const mathInputExplanationUzRef = useRef<MathInputHandle>(null);
+  const mathInputExplanationRuRef = useRef<MathInputHandle>(null);
   
   // Track dynamically generated refs for the options loop
   const optionsRefs = useRef<Record<string, MathInputHandle | null>>({});
@@ -799,6 +817,8 @@ export function StandaloneQuestionForm({
   const getActiveMathRef = (): React.RefObject<MathInputHandle | null> => {
     if (activeInputFocus === "uz") return mathInputUzRef;
     if (activeInputFocus === "ru") return mathInputRuRef;
+    if (activeInputFocus === "explanation-uz") return mathInputExplanationUzRef;
+    if (activeInputFocus === "explanation-ru") return mathInputExplanationRuRef;
     if (activeInputFocus.startsWith("option-")) {
       const optionId = activeInputFocus.replace("option-", "");
       return { current: optionsRefs.current[optionId] || null };
@@ -836,6 +856,7 @@ export function StandaloneQuestionForm({
       setImagePreviewRu(getImageUrl(question.imagePathRu));
       setImageFileUz(null);
       setImageFileRu(null);
+      setExplanation(getInitialExplanation(question));
 
       if (question.type === "MultipleChoice") {
         void loadOptions(question.id);
@@ -861,6 +882,7 @@ export function StandaloneQuestionForm({
     setImagePreviewRu(undefined);
     setImageFileUz(null);
     setImageFileRu(null);
+    setExplanation({ textUz: "", textRu: "", videoLink: "" });
   }, [question]);
 
   const fetchTests = async () => {
@@ -935,6 +957,8 @@ export function StandaloneQuestionForm({
     setImagePreviewRu(undefined);
   };
 
+  const explanationVideoThumbnail = getYouTubeThumbnailUrl(explanation.videoLink);
+
   const handleAddOption = () => {
     setOptions((prev) => [
       ...prev,
@@ -1002,6 +1026,10 @@ export function StandaloneQuestionForm({
           correctAnswer: formData.correctAnswer,
           imageUz: imageFileUz || undefined,
           imageRu: imageFileRu || undefined,
+          explanation: {
+            ...explanation,
+            questionId: question.id,
+          },
         });
 
         if (response.success && response.data) {
@@ -1022,6 +1050,7 @@ export function StandaloneQuestionForm({
           order: formData.order,
           correctAnswer: formData.correctAnswer,
           options: options,
+          explanation,
         });
 
         if (response.success && response.data) {
@@ -1290,6 +1319,87 @@ export function StandaloneQuestionForm({
           />
         </div>
       )}
+
+      <section className="space-y-4 rounded-xl border border-neutral-200 bg-neutral-50/60 p-4">
+        <Label className="text-base font-semibold text-neutral-900">
+          Question Explanation
+        </Label>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <MathInput
+            ref={mathInputExplanationUzRef}
+            label="Explanation Text UZ"
+            initialValue={explanation.textUz}
+            onInput={(latex) =>
+              setExplanation((prev) => ({ ...prev, textUz: latex }))
+            }
+            onFocus={() => setActiveInputFocus("explanation-uz")}
+            onToggleKeyboard={() => {
+              setActiveInputFocus("explanation-uz");
+              setIsKeyboardVisible((p) => !p);
+            }}
+            disabled={isSubmitting}
+          />
+
+          <MathInput
+            ref={mathInputExplanationRuRef}
+            label="Explanation Text RU"
+            initialValue={explanation.textRu}
+            onInput={(latex) =>
+              setExplanation((prev) => ({ ...prev, textRu: latex }))
+            }
+            onFocus={() => setActiveInputFocus("explanation-ru")}
+            onToggleKeyboard={() => {
+              setActiveInputFocus("explanation-ru");
+              setIsKeyboardVisible((p) => !p);
+            }}
+            disabled={isSubmitting}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="question-explanation-video">Video Link (optional)</Label>
+          <Input
+            id="question-explanation-video"
+            type="url"
+            value={explanation.videoLink}
+            placeholder="https://www.youtube.com/watch?v=..."
+            onChange={(event) =>
+              setExplanation((prev) => ({
+                ...prev,
+                videoLink: event.target.value,
+              }))
+            }
+            disabled={isSubmitting}
+          />
+
+          {explanation.videoLink.trim() && (
+            <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
+              {explanationVideoThumbnail ? (
+                <div className="relative aspect-video bg-neutral-900">
+                  <img
+                    src={explanationVideoThumbnail}
+                    alt="Video thumbnail"
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-600 text-white shadow-lg">
+                      <Play className="ml-1 h-7 w-7 fill-current" />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex min-h-24 items-center px-4 text-sm text-neutral-600">
+                  Video preview unavailable for this link.
+                </div>
+              )}
+              <div className="truncate px-3 py-2 text-sm text-neutral-700">
+                {explanation.videoLink}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
 
       <div className="flex justify-end gap-2 pt-4">
         <Button

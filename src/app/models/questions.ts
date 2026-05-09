@@ -21,12 +21,21 @@ export interface Question {
     correctAnswer: string | null;
     correctOptionId?: string | null;
     questionGroupId: number | null;
+    explanation?: QuestionExplanationFormData | null;
 }
 
 export interface OptionForQuestion{
     text: string;
     isCorrect: boolean;
 }
+
+export interface QuestionExplanationFormData {
+    textUz?: string | null;
+    textRu?: string | null;
+    videoLink?: string | null;
+    questionId?: number | string | null;
+}
+
 /**
  * Question Create/Update Data (WRITE MODEL - for POST/PUT requests)
  * This model is used when creating or updating questions
@@ -43,4 +52,5 @@ export interface QuestionFormData {
     correctAnswer?: string | null;
     questionGroupId?: number | null;
     options? : OptionForQuestion[] | null;
+    explanation?: QuestionExplanationFormData | null;
 }

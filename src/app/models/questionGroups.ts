@@ -1,4 +1,5 @@
 import { Question } from "./questions";
+import type { QuestionExplanationFormData } from "./questions";
 import { Option} from "./options";
 import { Translation} from "./translations";
 
@@ -38,5 +39,5 @@ export interface QuestionGroupQuestionCreate {
     questionGroupId: string;
     correctOptionId?: string; // Reference to the correct option from the group
     correctAnswer?: string;
+    explanation?: QuestionExplanationFormData | null;
 }
-
