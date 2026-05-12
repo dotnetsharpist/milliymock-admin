@@ -37,7 +37,24 @@ math-field.math-composer__field::part(menu-toggle) {
 }
 
 /* --------------------------------------
- * 2. RICH TEXT & CHIP STYLES
+ * 2. CUSTOM MATH KEYBOARD SYMBOLS
+ * -------------------------------------- */
+.math-keyboard sup,
+.math-keyboard sub {
+  font-size: 0.62em;
+  line-height: 1;
+}
+
+.math-keyboard sup {
+  vertical-align: super;
+}
+
+.math-keyboard sub {
+  vertical-align: sub;
+}
+
+/* --------------------------------------
+ * 3. RICH TEXT & CHIP STYLES
  * -------------------------------------- */
 .math-rich-text {
   line-height: 1.7;
@@ -75,7 +92,7 @@ math-field.math-composer__field::part(menu-toggle) {
 }
 
 /* --------------------------------------
- * 3. INLINE LIVE EDITOR STYLES
+ * 4. INLINE LIVE EDITOR STYLES
  * -------------------------------------- */
 body.question-inline-composer--custom-only .ML__keyboard,
 body.question-inline-composer--custom-only .ML__virtual-keyboard-toggle,

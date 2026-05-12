@@ -132,7 +132,7 @@ export function QuestionInlineKeyboard({
   if (!isVisible) return null;
 
   return (
-    <div className="relative bg-gray-50 border-t-2 border-gray-300 shadow-2xl py-3 px-4">
+    <div className="math-keyboard relative bg-gray-50 border-t-2 border-gray-300 shadow-2xl py-3 px-4">
       <button
         type="button"
         onMouseDown={(event) => {

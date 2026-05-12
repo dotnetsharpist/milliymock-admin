@@ -397,15 +397,15 @@ const MathInput = forwardRef<MathInputHandle, MathInputProps>(
           .mq-field-root .mq-sup,
           .mq-field-root .mq-sub {
             color: #111827 !important;
-            font-size: 1.2em !important; 
+            font-size: 0.7em !important;
           }
           
           .mq-field-root .mq-sup .mq-text {
-            font-size: 1.6em !important; 
-            line-height: 0.8 !important;
+            font-size: 1em !important;
+            line-height: 1 !important;
             font-family: 'Arial', sans-serif !important; 
             display: inline-block;
-            transform: translateY(2px); 
+            transform: translateY(1px);
           }
 
           .mq-field-root .mq-sqrt-stem {
@@ -565,7 +565,7 @@ function MathKeyboard({ mathInputRef, isVisible = true, onClose }: MathKeyboardP
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t-2 border-gray-300 bg-gray-50 px-4 py-3 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+    <div className="math-keyboard fixed bottom-0 left-0 right-0 z-50 border-t-2 border-gray-300 bg-gray-50 px-4 py-3 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
       <div className="mx-auto max-w-[1400px]">
         <div className="mb-2 flex items-center justify-between px-1">
           <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
