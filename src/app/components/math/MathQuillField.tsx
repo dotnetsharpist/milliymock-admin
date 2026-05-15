@@ -239,6 +239,9 @@ export const MathQuillInput = forwardRef<MathInputHandle, MathQuillInputProps>(
           // smartMode could drift into text mode and render `^{2}` literally.
           field.smartMode = false;
           field.smartFence = true;
+          // Physical space bar inserts a space in math mode, matching the
+          // on-screen SPACE key (`\;`). Without this, space does nothing.
+          field.mathModeSpace = "\\;";
 
           if (initialValue) {
             field.value = initialValue.replace(/\\circ/g, "\\text{°}");
