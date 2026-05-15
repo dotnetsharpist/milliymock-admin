@@ -39,6 +39,11 @@ import { testService } from "../../services/testService";
 import { toast } from "sonner";
 import { BASE_URL } from "../../config/api";
 import { getYouTubeThumbnailUrl } from "../../lib/video";
+import {
+  MathQuillInput as SharedMathInput,
+  MathQuillKeyboard as SharedMathKeyboard,
+  type MathInputHandle as SharedMathInputHandle,
+} from "../math/MathQuillField";
 
 // ─── MathQuill CDN Loader (Singleton) ────────────────────────────────────────
 
@@ -108,8 +113,6 @@ function loadMathQuill(): Promise<MQInterface> {
     })();
   });
 }
-
-loadMathQuill();
 
 // ─── MathInput Component & Types ──────────────────────────────────────────────
 
@@ -802,19 +805,19 @@ export function StandaloneQuestionForm({
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
 
   // Focus & Keyboard State
-  const mathInputUzRef = useRef<MathInputHandle>(null);
-  const mathInputRuRef = useRef<MathInputHandle>(null);
-  const mathInputExplanationUzRef = useRef<MathInputHandle>(null);
-  const mathInputExplanationRuRef = useRef<MathInputHandle>(null);
+  const mathInputUzRef = useRef<SharedMathInputHandle>(null);
+  const mathInputRuRef = useRef<SharedMathInputHandle>(null);
+  const mathInputExplanationUzRef = useRef<SharedMathInputHandle>(null);
+  const mathInputExplanationRuRef = useRef<SharedMathInputHandle>(null);
   
   // Track dynamically generated refs for the options loop
-  const optionsRefs = useRef<Record<string, MathInputHandle | null>>({});
+  const optionsRefs = useRef<Record<string, SharedMathInputHandle | null>>({});
   
   const [activeInputFocus, setActiveInputFocus] = useState<string>("uz");
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   // Dynamically resolve the reference for the active math input so the keyboard points to the right one
-  const getActiveMathRef = (): React.RefObject<MathInputHandle | null> => {
+  const getActiveMathRef = (): React.RefObject<SharedMathInputHandle | null> => {
     if (activeInputFocus === "uz") return mathInputUzRef;
     if (activeInputFocus === "ru") return mathInputRuRef;
     if (activeInputFocus === "explanation-uz") return mathInputExplanationUzRef;
@@ -1191,7 +1194,7 @@ export function StandaloneQuestionForm({
         </div>
       </div>
 
-      <MathInput
+      <SharedMathInput
         ref={mathInputUzRef}
         label="Question Content UZ"
         initialValue={question?.textUz ?? ""}
@@ -1206,7 +1209,7 @@ export function StandaloneQuestionForm({
         disabled={isSubmitting}
       />
 
-      <MathInput
+      <SharedMathInput
         ref={mathInputRuRef}
         label="Question Content RU"
         initialValue={question?.textRu ?? ""}
@@ -1264,7 +1267,7 @@ export function StandaloneQuestionForm({
                   </Button>
                   
                   <div className="flex-1">
-                    <MathInput
+                    <SharedMathInput
                       ref={(el) => {
                         if (el) optionsRefs.current[option.id] = el;
                       }}
@@ -1326,7 +1329,7 @@ export function StandaloneQuestionForm({
         </Label>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <MathInput
+          <SharedMathInput
             ref={mathInputExplanationUzRef}
             label="Explanation Text UZ"
             initialValue={explanation.textUz}
@@ -1341,7 +1344,7 @@ export function StandaloneQuestionForm({
             disabled={isSubmitting}
           />
 
-          <MathInput
+          <SharedMathInput
             ref={mathInputExplanationRuRef}
             label="Explanation Text RU"
             initialValue={explanation.textRu}
@@ -1424,7 +1427,7 @@ export function StandaloneQuestionForm({
         </Button>
       </div>
 
-      <MathKeyboard
+      <SharedMathKeyboard
         mathInputRef={activeMathRef}
         isVisible={isKeyboardVisible && !isSubmitting}
         onClose={() => setIsKeyboardVisible(false)}

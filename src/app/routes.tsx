@@ -9,6 +9,7 @@ import { QuestionGroupCreate } from "./pages/QuestionGroupCreate";
 import { QuestionGroupDetail } from "./pages/QuestionGroupDetail";
 import { QuestionGroupQuestionCreate } from "./pages/QuestionGroupQuestionCreate";
 import { QuestionGroupOptionCreate } from "./pages/QuestionGroupOptionCreate";
+import { MathKeyboardTest } from "./pages/MathKeyboardTest";
 import { Users } from "./pages/Users";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -43,6 +44,7 @@ export const router = createBrowserRouter([
         Component: QuestionGroupOptionCreate,
       },
       { path: "users", Component: Users },
+      { path: "math-keyboard", Component: MathKeyboardTest },
     ],
   },
 ]);

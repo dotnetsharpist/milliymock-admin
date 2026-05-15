@@ -463,6 +463,24 @@ export function QuestionInlineComposer({
     const mathField = mathFieldRef.current;
     if (!mathField || !activeFormulaIdRef.current) return;
 
+    if (mathField.value.includes("\\begin{cases}")) {
+      if (key === "Enter" && mathField.executeCommand("addRowAfter")) {
+        syncSelectedFormulaFromMathField();
+        hideLibraryKeyboard();
+        return;
+      }
+
+      if (
+        key === "/" &&
+        (mathField.executeCommand("moveToNextPlaceholder") ||
+          mathField.executeCommand("moveToNextGroup"))
+      ) {
+        syncSelectedFormulaFromMathField();
+        hideLibraryKeyboard();
+        return;
+      }
+    }
+
     const commandMap: Record<string, string> = {
       Left: "moveToPreviousChar",
       Right: "moveToNextChar",
@@ -574,6 +592,30 @@ export function QuestionInlineComposer({
       syncSelectedFormulaFromMathField();
     };
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!activeFormulaIdRef.current) return;
+      if (!mathField.value.includes("\\begin{cases}")) return;
+
+      if (event.key === "Enter") {
+        const added = mathField.executeCommand("addRowAfter");
+        if (added) {
+          event.preventDefault();
+          syncSelectedFormulaFromMathField();
+        }
+        return;
+      }
+
+      if (event.key === "/") {
+        const moved =
+          mathField.executeCommand("moveToNextPlaceholder") ||
+          mathField.executeCommand("moveToNextGroup");
+        if (moved) {
+          event.preventDefault();
+          syncSelectedFormulaFromMathField();
+        }
+      }
+    };
+
     mathField.mathVirtualKeyboardPolicy = "manual";
     mathField.defaultMode = "math";
     mathField.smartFence = true;
@@ -581,9 +623,11 @@ export function QuestionInlineComposer({
     mathField.readOnly = disabled;
     hideLibraryKeyboard();
     mathField.addEventListener("input", handleInput);
+    mathField.addEventListener("keydown", handleKeyDown, true);
 
     return () => {
       mathField.removeEventListener("input", handleInput);
+      mathField.removeEventListener("keydown", handleKeyDown, true);
     };
   }, [disabled, isMathReady]);
 
@@ -626,7 +670,7 @@ export function QuestionInlineComposer({
       ref={rootRef}
       className={cn(
         "space-y-4",
-        isKeyboardOpen && "pb-[42rem] lg:pb-[19rem]",
+        isKeyboardOpen && "pb-[46rem] lg:pb-[21rem]",
         className
       )}
     >

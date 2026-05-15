@@ -1,37 +1,27 @@
+/**
+ * PRESERVED — original custom virtual keyboard.
+ *
+ * This is the hand-built keyboard that was used before the migration to
+ * MathLive's built-in keyboard. It is kept intact so it can be restored:
+ * flip `USE_MATHLIVE_KEYBOARD` in `MathQuillField.tsx` back to `false`.
+ *
+ * It still works — it drives the math field through the `MathInputHandle`
+ * imperative API, which is backed by MathLive.
+ */
 import { useState, type ReactNode, type RefObject } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Delete,
-  CornerDownLeft,
-  X,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, CornerDownLeft, Delete, X } from "lucide-react";
+import type { MathInputHandle } from "./MathQuillField";
 
-const CASES_TEMPLATE = "\\begin{cases}#? & #?\\end{cases}";
-
-export interface QuestionInlineMathHandle {
-  cmd: (latexCmd: string) => void;
-  write: (latex: string) => void;
-  typedText: (text: string) => void;
-  keystroke: (key: string) => void;
-  focus: () => void;
-  getLatex: () => string;
-}
-
-interface QuestionInlineKeyboardProps {
-  mathInputRef: RefObject<QuestionInlineMathHandle | null>;
-  isVisible?: boolean;
-  onClose?: () => void;
-}
+const CASES_TEMPLATE = "\\begin{cases}#@ & #?\\\\#? & #?\\end{cases}";
 
 type Action =
   | { type: "cmd"; arg: string }
   | { type: "write"; arg: string }
   | { type: "typed"; arg: string }
   | { type: "key"; arg: string }
-  | { type: "custom"; fn: (mf: QuestionInlineMathHandle) => void };
+  | { type: "custom"; fn: (mf: MathInputHandle) => void };
 
-function dispatch(mf: QuestionInlineMathHandle, action: Action) {
+function dispatch(mf: MathInputHandle, action: Action) {
   switch (action.type) {
     case "cmd":
       mf.cmd(action.arg);
@@ -51,20 +41,30 @@ function dispatch(mf: QuestionInlineMathHandle, action: Action) {
   }
 }
 
-export function QuestionInlineKeyboard({
+interface CustomMathKeyboardProps {
+  mathInputRef: RefObject<MathInputHandle | null>;
+  isVisible?: boolean;
+  onClose: () => void;
+}
+
+export function CustomMathKeyboard({
   mathInputRef,
   isVisible = true,
   onClose,
-}: QuestionInlineKeyboardProps) {
+}: CustomMathKeyboardProps) {
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [isAlphabetMode, setIsAlphabetMode] = useState(false);
+
+  const insertCasesBlock = () => {
+    setActiveKey("cases");
+    mathInputRef.current?.write(CASES_TEMPLATE);
+    window.setTimeout(() => setActiveKey(null), 120);
+  };
 
   const fire = (keyId: string, action: Action) => {
     setActiveKey(keyId);
     const mathField = mathInputRef.current;
-    if (mathField) {
-      dispatch(mathField, action);
-    }
+    if (mathField) dispatch(mathField, action);
     window.setTimeout(() => setActiveKey(null), 120);
   };
 
@@ -87,7 +87,6 @@ export function QuestionInlineKeyboard({
     children: ReactNode;
     onClick?: () => void;
   }) => {
-    const isActive = activeKey === id;
     const baseClasses = [
       "rounded-lg select-none cursor-pointer flex items-center justify-center",
       "transition-all duration-75 shadow-sm active:scale-95",
@@ -104,6 +103,7 @@ export function QuestionInlineKeyboard({
         "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 shadow-md",
     }[variant];
 
+    const isActive = activeKey === id;
     const activeClass = isActive
       ? variant === "blue"
         ? "brightness-75"
@@ -134,52 +134,40 @@ export function QuestionInlineKeyboard({
   if (!isVisible) return null;
 
   return (
-    <div className="math-keyboard relative bg-gray-50 border-t-2 border-gray-300 px-6 py-5 shadow-2xl">
-      <button
-        type="button"
-        onMouseDown={(event) => {
-          event.preventDefault();
-          onClose?.();
-        }}
-        className="absolute right-4 top-3 z-10 inline-flex h-8 items-center gap-1 rounded-md border border-gray-300 bg-white px-2 text-xs font-medium text-gray-600 hover:bg-gray-100"
-      >
-        <X className="h-3.5 w-3.5" />
-        Yopish
-      </button>
+    <div className="math-keyboard fixed bottom-0 left-0 right-0 z-50 border-t-2 border-gray-300 bg-gray-50 px-6 py-5 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
       <div className="mx-auto max-w-[1400px]">
+        <div className="mb-2 flex items-center justify-between px-1">
+          <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
+            Virtual Keyboard
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex items-center gap-1 rounded-md p-1.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-800"
+            title="Close Keyboard"
+          >
+            <span className="hidden sm:inline">Close</span>
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 items-end gap-4 lg:grid-cols-[1fr_1fr_340px]">
           <div className="grid grid-cols-4 gap-3">
             {!isAlphabetMode ? (
               <>
-                <Key
-                  id="x"
-                  action={{ type: "typed", arg: "x" }}
-                  title="Variable x"
-                >
+                <Key id="x" action={{ type: "typed", arg: "x" }} title="Variable x">
                   <em>x</em>
                 </Key>
-                <Key
-                  id="y"
-                  action={{ type: "typed", arg: "y" }}
-                  title="Variable y"
-                >
+                <Key id="y" action={{ type: "typed", arg: "y" }} title="Variable y">
                   <em>y</em>
                 </Key>
-                <Key
-                  id="sq"
-                  action={{ type: "write", arg: "#@^{2}" }}
-                  title="Square (x²)"
-                >
+                <Key id="sq" action={{ type: "write", arg: "^{2}" }} title="Square">
                   <span>
                     <em>a</em>
                     <sup>2</sup>
                   </span>
                 </Key>
-                <Key
-                  id="pow"
-                  action={{ type: "cmd", arg: "^" }}
-                  title="Power"
-                >
+                <Key id="pow" action={{ type: "cmd", arg: "^" }} title="Power">
                   <span>
                     <em>a</em>
                     <sup>
@@ -187,12 +175,18 @@ export function QuestionInlineKeyboard({
                     </sup>
                   </span>
                 </Key>
-
                 <Key id="lp" action={{ type: "typed", arg: "(" }} title="(">
                   (
                 </Key>
                 <Key id="rp" action={{ type: "typed", arg: ")" }} title=")">
                   )
+                </Key>
+                <Key
+                  id="system"
+                  onClick={insertCasesBlock}
+                  title="Piecewise / cases"
+                >
+                  <span className="text-xl">{"{"}</span>
                 </Key>
                 <Key id="lt" action={{ type: "typed", arg: "<" }} title="Less than">
                   &lt;
@@ -200,17 +194,12 @@ export function QuestionInlineKeyboard({
                 <Key id="gt" action={{ type: "typed", arg: ">" }} title="Greater than">
                   &gt;
                 </Key>
-
-                <Key
-                  id="abs"
-                  action={{ type: "write", arg: "\\left|#?\\right|" }}
-                  title="Absolute value"
-                >
+                <Key id="abs" action={{ type: "typed", arg: "|" }} title="Absolute value">
                   <span>
                     |<em>a</em>|
                   </span>
                 </Key>
-                <Key id="sub" action={{ type: "cmd", arg: "_" }} title="Subscript">
+                <Key id="sub_script" action={{ type: "cmd", arg: "_" }} title="Subscript">
                   <span>
                     <em>a</em>
                     <sub>
@@ -224,163 +213,86 @@ export function QuestionInlineKeyboard({
                 <Key id="ge" action={{ type: "write", arg: "\\ge" }} title="≥">
                   ≥
                 </Key>
-
-                <Key id="pi" action={{ type: "write", arg: "\\pi" }} title="π">
+                <Key id="pi" action={{ type: "write", arg: "\\pi" }} title="Pi">
                   π
                 </Key>
-                <Key
-                  id="nthroot"
-                  action={{ type: "cmd", arg: "\\nthroot" }}
-                  title="Nth root"
-                >
+                <Key id="nthroot" action={{ type: "cmd", arg: "\\nthroot" }} title="Nth root">
                   <span className="relative inline-block text-lg">
-                    <span className="absolute -top-1 -left-2 text-[10px]">n</span>
+                    <span className="absolute -left-2 -top-1 text-[10px]">n</span>
                     <span>√</span>
                   </span>
                 </Key>
-                <Key
-                  id="sqrt"
-                  action={{ type: "cmd", arg: "\\sqrt" }}
-                  title="Square root"
-                >
+                <Key id="sqrt" action={{ type: "cmd", arg: "\\sqrt" }} title="Square root">
                   √
                 </Key>
-                <Key
-                  id="ABC"
-                  variant="gray"
-                  onClick={() => setIsAlphabetMode(true)}
-                  title="Switch to letters"
-                >
+                <Key id="ABC" variant="gray" onClick={() => setIsAlphabetMode(true)}>
                   <span className="text-sm tracking-widest">A B C</span>
                 </Key>
               </>
             ) : (
               <>
-                <Key id="neq" action={{ type: "write", arg: "\\ne" }} title="≠">
+                <Key id="neq" action={{ type: "write", arg: "\\ne" }}>
                   ≠
                 </Key>
-                <Key id="int" action={{ type: "write", arg: "\\int" }} title="∫">
-                  ∫
+                <Key id="int" action={{ type: "write", arg: "\\int" }}>
+                  <span className="text-2xl">∫</span>
                 </Key>
-                <Key
-                  id="deg"
-                  action={{ type: "write", arg: "^{\\circ}" }}
-                  title="Degree"
-                >
+                <Key id="deg" action={{ type: "write", arg: "^{\\text{°}}" }}>
                   <span className="text-2xl">°</span>
                 </Key>
                 <Key
                   id="cases"
-                  action={{
-                    type: "custom",
-                    fn: (mf) => {
-                      mf.write(CASES_TEMPLATE);
-                    },
-                  }}
+                  onClick={insertCasesBlock}
                   title="Piecewise / cases"
                 >
                   <span className="text-xl">{"{"}</span>
                 </Key>
-
-                <Key
-                  id="emptyset"
-                  action={{ type: "write", arg: "\\emptyset" }}
-                  title="∅"
-                >
+                <Key id="emptyset" action={{ type: "write", arg: "\\emptyset" }}>
                   ∅
                 </Key>
-                <Key id="perp" action={{ type: "write", arg: "\\perp" }} title="⊥">
-                  <span className="font-bold text-lg">⊥</span>
+                <Key id="perp" action={{ type: "write", arg: "\\perp" }}>
+                  <span className="text-lg font-bold">⊥</span>
                 </Key>
-                <Key id="in" action={{ type: "write", arg: "\\in" }} title="∈">
+                <Key id="in" action={{ type: "write", arg: "\\in" }}>
                   ∈
                 </Key>
-                <Key
-                  id="infty"
-                  action={{ type: "write", arg: "\\infty" }}
-                  title="∞"
-                >
+                <Key id="infty" action={{ type: "write", arg: "\\infty" }}>
                   ∞
                 </Key>
-
-                <Key id="cup" action={{ type: "write", arg: "\\cup" }} title="∪">
+                <Key id="cup" action={{ type: "write", arg: "\\cup" }}>
                   ∪
                 </Key>
-                <Key id="cap" action={{ type: "write", arg: "\\cap" }} title="∩">
+                <Key id="cap" action={{ type: "write", arg: "\\cap" }}>
                   ∩
                 </Key>
-                <Key
-                  id="subseteq"
-                  action={{ type: "write", arg: "\\subseteq" }}
-                  title="⊆"
-                >
+                <Key id="subseteq" action={{ type: "write", arg: "\\subseteq" }}>
                   ⊆
                 </Key>
-                <Key
-                  id="nsubseteq"
-                  action={{ type: "write", arg: "\\not\\subseteq" }}
-                  title="⊈"
-                >
+                <Key id="nsubseteq" action={{ type: "write", arg: "\\not\\subseteq" }}>
                   ⊈
                 </Key>
-
-                <Key
-                  id="subset"
-                  action={{ type: "write", arg: "\\subset" }}
-                  title="⊂"
-                >
+                <Key id="subset" action={{ type: "write", arg: "\\subset" }}>
                   ⊂
                 </Key>
-                <Key
-                  id="cdot"
-                  action={{ type: "write", arg: "\\cdot" }}
-                  title="·"
-                >
-                  <span className="font-bold text-2xl">·</span>
+                <Key id="cdot" action={{ type: "write", arg: "\\cdot" }}>
+                  <span className="text-2xl font-bold">·</span>
                 </Key>
-                <Key
-                  id="alpha"
-                  action={{ type: "write", arg: "\\alpha" }}
-                  title="α"
-                >
+                <Key id="alpha" action={{ type: "write", arg: "\\alpha" }}>
                   <span className="text-lg">α</span>
                 </Key>
-                <Key
-                  id="approx"
-                  action={{ type: "write", arg: "\\approx" }}
-                  title="≈"
-                >
+                <Key id="approx" action={{ type: "write", arg: "\\approx" }}>
                   ≈
                 </Key>
-
-                <Key
-                  id="tilde"
-                  action={{ type: "write", arg: "\\sim" }}
-                  title="~"
-                >
+                <Key id="tilde" action={{ type: "write", arg: "\\sim" }}>
                   ~
                 </Key>
-                <Key
-                  id="beta"
-                  action={{ type: "write", arg: "\\beta" }}
-                  title="β"
-                >
+                <Key id="beta" action={{ type: "write", arg: "\\beta" }}>
                   <span className="text-lg">β</span>
                 </Key>
-                <Key
-                  id="gamma"
-                  action={{ type: "write", arg: "\\gamma" }}
-                  title="γ"
-                >
+                <Key id="gamma" action={{ type: "write", arg: "\\gamma" }}>
                   <span className="text-lg">γ</span>
                 </Key>
-                <Key
-                  id="123"
-                  variant="gray"
-                  span={2}
-                  onClick={() => setIsAlphabetMode(false)}
-                  title="Switch to numbers"
-                >
+                <Key id="123" variant="gray" span={2} onClick={() => setIsAlphabetMode(false)}>
                   <span className="text-sm tracking-widest">123</span>
                 </Key>
               </>
@@ -397,19 +309,13 @@ export function QuestionInlineKeyboard({
             <Key id="9" action={{ type: "typed", arg: "9" }} variant="gray">
               9
             </Key>
-            <Key
-              id="frac"
-              action={{ type: "cmd", arg: "\\frac" }}
-              variant="white"
-              title="Fraction"
-            >
+            <Key id="frac" action={{ type: "cmd", arg: "\\frac" }} variant="white">
               <span className="flex flex-col items-center gap-[2px] leading-none">
                 <span className="text-[11px]">a</span>
                 <span className="w-4 border-t border-gray-700" />
                 <span className="text-[11px]">b</span>
               </span>
             </Key>
-
             <Key id="4" action={{ type: "typed", arg: "4" }} variant="gray">
               4
             </Key>
@@ -419,15 +325,9 @@ export function QuestionInlineKeyboard({
             <Key id="6" action={{ type: "typed", arg: "6" }} variant="gray">
               6
             </Key>
-            <Key
-              id="mul"
-              action={{ type: "write", arg: "\\cdot" }}
-              variant="white"
-              title="Multiply"
-            >
+            <Key id="mul" action={{ type: "write", arg: "\\cdot" }} variant="white">
               ×
             </Key>
-
             <Key id="1" action={{ type: "typed", arg: "1" }} variant="gray">
               1
             </Key>
@@ -437,15 +337,9 @@ export function QuestionInlineKeyboard({
             <Key id="3" action={{ type: "typed", arg: "3" }} variant="gray">
               3
             </Key>
-            <Key
-              id="sub"
-              action={{ type: "typed", arg: "-" }}
-              variant="white"
-              title="Subtract"
-            >
+            <Key id="sub" action={{ type: "typed", arg: "-" }} variant="white">
               −
             </Key>
-
             <Key id="0" action={{ type: "typed", arg: "0" }} variant="gray">
               0
             </Key>
@@ -455,63 +349,29 @@ export function QuestionInlineKeyboard({
             <Key id="eq" action={{ type: "typed", arg: "=" }} variant="gray">
               =
             </Key>
-            <Key
-              id="add"
-              action={{ type: "typed", arg: "+" }}
-              variant="white"
-              title="Add"
-            >
+            <Key id="add" action={{ type: "typed", arg: "+" }} variant="white">
               +
             </Key>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Key id="fn" variant="gray" span={2} title="Functions">
+            <Key id="fn" variant="gray" span={2} title="Insert function (coming soon)">
               <span className="text-sm tracking-wide">functions</span>
             </Key>
-            <Key
-              id="space"
-              action={{ type: "write", arg: "\\ " }}
-              variant="gray"
-              span={2}
-              title="Space"
-            >
+            <Key id="space" action={{ type: "write", arg: "\\;" }} variant="gray" span={2}>
               <span className="text-sm tracking-wider">SPACE</span>
             </Key>
-            <Key
-              id="left"
-              action={{ type: "key", arg: "Left" }}
-              variant="gray"
-              title="Move left"
-            >
-              <ArrowLeft className="w-5 h-5" />
+            <Key id="left" action={{ type: "key", arg: "Left" }} variant="gray">
+              <ArrowLeft className="h-5 w-5" />
             </Key>
-            <Key
-              id="right"
-              action={{ type: "key", arg: "Right" }}
-              variant="gray"
-              title="Move right"
-            >
-              <ArrowRight className="w-5 h-5" />
+            <Key id="right" action={{ type: "key", arg: "Right" }} variant="gray">
+              <ArrowRight className="h-5 w-5" />
             </Key>
-            <Key
-              id="bs"
-              action={{ type: "key", arg: "Backspace" }}
-              variant="gray"
-              span={2}
-              title="Backspace"
-            >
-              <Delete className="w-5 h-5" />
+            <Key id="bs" action={{ type: "key", arg: "Backspace" }} variant="gray" span={2}>
+              <Delete className="h-5 w-5" />
             </Key>
-            <Key
-              id="enter"
-              action={{ type: "key", arg: "Enter" }}
-              variant="blue"
-              span={2}
-              tall
-              title="Enter"
-            >
-              <CornerDownLeft className="w-6 h-6" />
+            <Key id="enter" action={{ type: "key", arg: "Enter" }} variant="blue" span={2} tall>
+              <CornerDownLeft className="h-6 w-6" />
             </Key>
           </div>
         </div>
