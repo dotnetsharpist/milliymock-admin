@@ -22,6 +22,7 @@ export interface Question {
     correctOptionId?: string | null;
     questionGroupId: number | null;
     explanation?: QuestionExplanationFormData | null;
+    questionExplanation?: QuestionExplanation | null;
 }
 
 export interface OptionForQuestion{
@@ -34,6 +35,12 @@ export interface QuestionExplanationFormData {
     textRu?: string | null;
     videoLink?: string | null;
     questionId?: number | string | null;
+}
+
+export interface QuestionExplanation {
+    id: number;
+    videoLink: string | null;
+    translations: Translation[];
 }
 
 /**

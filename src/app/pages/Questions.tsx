@@ -23,17 +23,45 @@ import {
   TooltipTrigger,
 } from "../components/ui/tooltip";
 import { toast } from "sonner";
-import { Question as ApiQuestion } from "../models/questions";
+import { Question as ApiQuestion, QuestionTypeForQuestion } from "../models/questions";
 import { Option as QuestionOption} from "../models/options";
 import { questionService } from "../services/questionService";
 import { optionService } from "../services/optionService";
 import { BASE_URL } from "../config/api";
 import { MathText } from "../components/math/MathText";
+import { StandaloneQuestionFormQuestion } from "../components/forms/StandaloneQuestionForm";
 
 type QuestionType = "MultipleChoice" | "Matching" | "FreeAnswer";
 type QuestionListItem = ApiQuestion & {
   correctAnswer?: string | null;
   score?: number | null;
+};
+
+const toFormQuestion = (q: ApiQuestion): StandaloneQuestionFormQuestion => {
+  const uz = q.translations?.find((t) => t.language === "Uzbek");
+  const ru = q.translations?.find((t) => t.language === "Russian");
+
+  const explanation = q.questionExplanation;
+  const expUz = explanation?.translations?.find((t) => t.language === "Uzbek");
+  const expRu = explanation?.translations?.find((t) => t.language === "Russian");
+
+  return {
+    id: String(q.id),
+    testId: String(q.testId),
+    textUz: uz?.text ?? "",
+    textRu: ru?.text ?? "",
+    imagePathUz: uz?.imagePath ?? "",
+    imagePathRu: ru?.imagePath ?? "",
+    type: q.type as QuestionTypeForQuestion,
+    order: q.order,
+    score: q.score,
+    correctAnswer: q.correctAnswer ?? "",
+    explanation: {
+      textUz: expUz?.text ?? "",
+      textRu: expRu?.text ?? "",
+      videoLink: explanation?.videoLink ?? "",
+    },
+  };
 };
 
 // Helper function to clean up MathQuill's raw LaTeX string for rendering
@@ -76,7 +104,7 @@ export function Questions() {
   const [questions, setQuestions] = useState<QuestionListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedQuestion, setSelectedQuestion] = useState<ApiQuestion | undefined>();
+  const [selectedQuestion, setSelectedQuestion] = useState<StandaloneQuestionFormQuestion | undefined>();
   const selectedTestId = searchParams.get("testId");
 
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
@@ -125,7 +153,7 @@ export function Questions() {
 
   const handleEdit = (e: React.MouseEvent, question: ApiQuestion) => {
     e.stopPropagation();
-    setSelectedQuestion(question);
+    setSelectedQuestion(toFormQuestion(question));
     setIsModalOpen(true);
   };
 
