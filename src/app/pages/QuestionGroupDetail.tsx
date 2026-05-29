@@ -2,12 +2,23 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router";
 import { Button } from "../components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Plus, Edit, Trash2, ArrowLeft } from "lucide-react";
+import { Plus, Edit, Trash2, ArrowLeft, Loader2 } from "lucide-react";
 import { DataTable, Column } from "../components/DataTable";
 import {
   Option,
 } from "../data/mockData";
 import {Translation} from "../models/translations";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../components/ui/alert-dialog";
+import { optionService } from "../services/optionService";
 
 export interface Question {
     id: string;
@@ -51,6 +62,9 @@ export function QuestionGroupDetail() {
   const [isOptionModalOpen, setIsOptionModalOpen] = useState(false);
   const [editingOption, setEditingOption] = useState<Option | undefined>();
   const activeTab = searchParams.get("tab") === "options" ? "options" : "questions";
+
+  const [optionToDelete, setOptionToDelete] = useState<string | null>(null);
+  const [isDeletingOption, setIsDeletingOption] = useState(false);
 
   const normalizeMathPreviewText = (text?: string | null) => {
     if (!text) return "";
@@ -144,8 +158,29 @@ export function QuestionGroupDetail() {
   };
 
   const handleDeleteOption = (optionId: string) => {
-    setOptions(options.filter((o) => o.id !== optionId));
-    toast.success("Option deleted successfully");
+    setOptionToDelete(optionId);
+  };
+
+  const handleConfirmDeleteOption = async () => {
+    if (!optionToDelete) return;
+
+    try {
+      setIsDeletingOption(true);
+      const response = await optionService.deleteOption(optionToDelete);
+
+      if (response.success) {
+        setOptions((prev) => prev.filter((o) => o.id !== optionToDelete));
+        toast.success("Option deleted successfully");
+      } else {
+        toast.error(response.error ?? "Failed to delete option");
+      }
+    } catch (error) {
+      console.error("Error deleting option:", error);
+      toast.error("Error deleting option");
+    } finally {
+      setIsDeletingOption(false);
+      setOptionToDelete(null);
+    }
   };
 
   const handleSaveOption = (option: Option) => {
@@ -354,6 +389,39 @@ export function QuestionGroupDetail() {
         option={editingOption}
         groupId={groupId!}
       />
+
+      <AlertDialog
+        open={optionToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open && !isDeletingOption) setOptionToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete option?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the option. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingOption}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDeleteOption}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={isDeletingOption}
+            >
+              {isDeletingOption ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
