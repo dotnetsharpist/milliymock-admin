@@ -632,7 +632,7 @@ function MathKeyboard({ mathInputRef, isVisible = true, onClose }: MathKeyboardP
               <>
                 <Key id="neq" action={{ type: "write", arg: "\\ne" }}>≠</Key>
                 <Key id="int" action={{ type: "typed", arg: "∫" }}><span className="text-2xl">∫</span></Key>
-                <Key id="deg" action={{ type: "write", arg: "^{\\text{°}}" }}><span className="text-2xl">°</span></Key>
+                <Key id="deg" action={{ type: "write", arg: "^{\\circ}" }}><span className="text-2xl">°</span></Key>
                 <Key 
                   id="cases" 
                   action={{ 

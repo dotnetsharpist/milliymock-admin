@@ -28,3 +28,48 @@ export const hasInlineMath = (value?: string | null, latex?: string | null) => {
     value.includes(`$$${normalized}$$`)
   );
 };
+
+const UNICODE_LATEX_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/≥/g, "\\ge "],
+  [/≤/g, "\\le "],
+  [/≠/g, "\\ne "],
+  [/≈/g, "\\approx "],
+  [/∞/g, "\\infty "],
+  [/π/g, "\\pi "],
+  [/θ/g, "\\theta "],
+  [/α/g, "\\alpha "],
+  [/β/g, "\\beta "],
+  [/γ/g, "\\gamma "],
+  [/∅/g, "\\emptyset "],
+  [/∈/g, "\\in "],
+  [/∉/g, "\\notin "],
+  [/⊆/g, "\\subseteq "],
+  [/⊈/g, "\\not\\subseteq "],
+  [/⊂/g, "\\subset "],
+  [/∪/g, "\\cup "],
+  [/∩/g, "\\cap "],
+  [/⊥/g, "\\perp "],
+  [/×/g, "\\times "],
+  [/÷/g, "\\div "],
+  [/·/g, "\\cdot "],
+  [/∫/g, "\\int "],
+  [/−/g, "-"],
+];
+
+const SLASH_COMMAND_PATTERN =
+  /\/(circ|frac|sqrt|le|ge|ne|approx|sim|pm|times|div|cdot|pi|theta|alpha|beta|gamma|Delta|infty|int|in|notin|cup|cap|subseteq|subset|emptyset|perp|sum)(?=\b|\{|$)/g;
+
+export const normalizeMathLatexForBackend = (value?: string | null) => {
+  if (!value) return "";
+
+  let normalized = value
+    .replace(/\\text\s*\{\s*[°º]\s*\}/g, "\\circ")
+    .replace(/[°º]/g, "\\circ")
+    .replace(SLASH_COMMAND_PATTERN, "\\$1");
+
+  for (const [pattern, replacement] of UNICODE_LATEX_REPLACEMENTS) {
+    normalized = normalized.replace(pattern, replacement);
+  }
+
+  return normalized.replace(/[ \t]{2,}/g, " ").trim();
+};

@@ -3,6 +3,7 @@ import {API_ENDPOINTS} from "../config/api";
 import {StandaloneQuestion} from "../data/mockData";
 import {Question, QuestionFormData} from "../models/questions";
 import {QuestionGroupQuestionCreate} from "../models/questionGroups";
+import {normalizeMathLatexForBackend} from "../lib/math";
 
 const appendExplanationFields = (
     formData: FormData,
@@ -18,8 +19,14 @@ const appendExplanationFields = (
 
     if (!hasExplanation) return;
 
-    formData.append("Explanation.TextUz", explanation.textUz ?? "");
-    formData.append("Explanation.TextRu", explanation.textRu ?? "");
+    formData.append(
+        "Explanation.TextUz",
+        normalizeMathLatexForBackend(explanation.textUz)
+    );
+    formData.append(
+        "Explanation.TextRu",
+        normalizeMathLatexForBackend(explanation.textRu)
+    );
     formData.append("Explanation.VideoLink", explanation.videoLink ?? "");
     formData.append(
         "Explanation.QuestionId",
@@ -58,10 +65,10 @@ export const questionService = {
 
         // Optional fields
         if (data.textUz) {
-            formData.append("TextUz", data.textUz);
+            formData.append("TextUz", normalizeMathLatexForBackend(data.textUz));
         }
         if (data.textRu) {
-            formData.append("TextRu", data.textRu);
+            formData.append("TextRu", normalizeMathLatexForBackend(data.textRu));
         }
 
         if (data.imageUz) {
@@ -73,7 +80,10 @@ export const questionService = {
         }
 
         if (data.correctAnswer) {
-            formData.append("CorrectAnswer", data.correctAnswer);
+            formData.append(
+                "CorrectAnswer",
+                normalizeMathLatexForBackend(data.correctAnswer)
+            );
         }
         if (data.questionGroupId) {
             formData.append("QuestionGroupId", data.questionGroupId.toString());
@@ -83,7 +93,10 @@ export const questionService = {
 
         if (data.options) {
             data.options.forEach((opt, index) => {
-                formData.append(`Options[${index}].Text`, opt.text);
+                formData.append(
+                    `Options[${index}].Text`,
+                    normalizeMathLatexForBackend(opt.text)
+                );
                 formData.append(`Options[${index}].IsCorrect`, opt.isCorrect.toString());
             });
         }
@@ -118,10 +131,17 @@ export const questionService = {
 
         // Optional fields
         if (data.textUz !== undefined) {
-            formData.append("TextUz", data.textUz);
+            formData.append("TextUz", normalizeMathLatexForBackend(data.textUz));
         }
         if (data.textRu !== undefined) {
-            formData.append("TextRu", data.textRu);
+            formData.append("TextRu", normalizeMathLatexForBackend(data.textRu));
+        }
+
+        if (data.correctAnswer !== undefined) {
+            formData.append(
+                "CorrectAnswer",
+                normalizeMathLatexForBackend(data.correctAnswer)
+            );
         }
 
         if (data.imageUz) {
@@ -153,14 +173,17 @@ export const questionService = {
         formData.append("Score", data.score.toString().replace(",", "."));
         formData.append("Type", data.type.toString());
 
-        formData.append("TextUz", data.textUz);
-        formData.append("TextRu", data.textRu);
+        formData.append("TextUz", normalizeMathLatexForBackend(data.textUz));
+        formData.append("TextRu", normalizeMathLatexForBackend(data.textRu));
 
         if (data.correctOptionId) {
             formData.append("CorrectOptionId", data.correctOptionId.toString());
         }
         if (data.correctAnswer) {
-            formData.append("CorrectAnswer", data.correctAnswer);
+            formData.append(
+                "CorrectAnswer",
+                normalizeMathLatexForBackend(data.correctAnswer)
+            );
         }
         if (data.questionGroupId) {
             formData.append("QuestionGroupId", data.questionGroupId.toString());
@@ -180,15 +203,18 @@ export const questionService = {
         formData.append("Order", data.order.toString());
         formData.append("Score", data.score.toString().replace(",", "."));
         formData.append("Type", data.type.toString());
-        formData.append("TextUz", data.textUz);
-        formData.append("TextRu", data.textRu);
+        formData.append("TextUz", normalizeMathLatexForBackend(data.textUz));
+        formData.append("TextRu", normalizeMathLatexForBackend(data.textRu));
 
         if (data.correctOptionId) {
             formData.append("CorrectOptionId", data.correctOptionId.toString());
         }
 
         if (data.correctAnswer) {
-            formData.append("CorrectAnswer", data.correctAnswer);
+            formData.append(
+                "CorrectAnswer",
+                normalizeMathLatexForBackend(data.correctAnswer)
+            );
         }
 
         if (data.questionGroupId) {

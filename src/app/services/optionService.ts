@@ -2,6 +2,7 @@ import {apiService, ApiResponse} from "./apiService";
 import {API_ENDPOINTS} from "../config/api";
 import {StandaloneOption} from "../data/mockData";
 import {CreateOptionForQuestionGroupData} from "../models/options";
+import {normalizeMathLatexForBackend} from "../lib/math";
 
 /**
  * Standalone Option Service
@@ -60,7 +61,7 @@ export const optionService = {
         const payload = {
             questionId: data.questionId,
             questionGroupId: null,
-            text: data.text,
+            text: normalizeMathLatexForBackend(data.text),
             isCorrect: data.isCorrect,
         };
         return await apiService.post<StandaloneOption>(API_ENDPOINTS.STANDALONE_OPTIONS, payload);
@@ -75,7 +76,10 @@ export const optionService = {
     ): Promise<ApiResponse<StandaloneOption>> {
         // Convert to match API contract
         const payload = {
-            text: data.text,
+            text:
+                data.text === undefined
+                    ? undefined
+                    : normalizeMathLatexForBackend(data.text),
             isCorrect: data.isCorrect,
         };
         return await apiService.put<StandaloneOption>(
@@ -96,7 +100,7 @@ export const optionService = {
         // Convert to match API contract with proper field names
         const payload = {
             QuestionGroupId: data.questionGroupId,
-            Text: data.text
+            Text: normalizeMathLatexForBackend(data.text)
         };
         return await apiService.post<CreateOptionForQuestionGroupData>(API_ENDPOINTS.STANDALONE_OPTIONS, payload);
     },

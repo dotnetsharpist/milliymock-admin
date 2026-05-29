@@ -6,6 +6,7 @@ import {
     QuestionGroupDetailModel,
     QuestionGroupFormData
 } from "../models/questionGroups"
+import {normalizeMathLatexForBackend} from "../lib/math";
 
 /**
  * Question Group Service
@@ -43,8 +44,8 @@ export const questionGroupService = {
         // If image is provided, use multipart/form-data
         const formData = new FormData();
         formData.append("testId", data.testId);
-        formData.append("TitleUz", data.textUz);
-        formData.append("TitleRu", data.textRu);
+        formData.append("TitleUz", normalizeMathLatexForBackend(data.textUz));
+        formData.append("TitleRu", normalizeMathLatexForBackend(data.textRu));
         if (data.imageUz) {
             formData.append("ImageUz", data.imageUz);
         }
@@ -65,8 +66,8 @@ export const questionGroupService = {
     async updateQuestionGroup(id: string, data: QuestionGroupFormData): Promise<ApiResponse<QuestionGroup>> {
         const formData = new FormData();
         formData.append("testId", data.testId);
-        formData.append("TitleUz", data.textUz);
-        formData.append("TitleRu", data.textRu);
+        formData.append("TitleUz", normalizeMathLatexForBackend(data.textUz));
+        formData.append("TitleRu", normalizeMathLatexForBackend(data.textRu));
 
         if (data.imageUz) {
             formData.append("ImageUz", data.imageUz);

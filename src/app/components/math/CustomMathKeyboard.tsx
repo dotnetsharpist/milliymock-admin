@@ -237,7 +237,7 @@ export function CustomMathKeyboard({
                 <Key id="int" action={{ type: "write", arg: "\\int" }}>
                   <span className="text-2xl">∫</span>
                 </Key>
-                <Key id="deg" action={{ type: "write", arg: "^{\\text{°}}" }}>
+                <Key id="deg" action={{ type: "write", arg: "^{\\circ}" }}>
                   <span className="text-2xl">°</span>
                 </Key>
                 <Key
