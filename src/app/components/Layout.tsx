@@ -7,7 +7,8 @@ import {
   Users,
   LogOut,
   Layers,
-  HelpCircle
+  HelpCircle,
+  Calculator
 } from "lucide-react";
 
 const navigation = [
@@ -15,6 +16,7 @@ const navigation = [
   { name: "Tests", href: "/tests", icon: FileText },
   { name: "Questions", href: "/questions", icon: HelpCircle },
   { name: "Question Groups", href: "/question-groups", icon: Layers },
+  { name: "Desmos Calculator", href: "/desmos-calculator", icon: Calculator },
   { name: "Users", href: "/users", icon: Users },
 ];
 

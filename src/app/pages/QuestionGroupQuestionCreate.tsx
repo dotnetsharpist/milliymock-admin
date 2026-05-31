@@ -13,9 +13,9 @@ import {
 } from "../components/ui/select";
 import {
   MathQuillInput,
-  MathQuillKeyboard,
   type MathInputHandle,
 } from "../components/math/MathQuillField";
+import { DesmosMathKeyboard } from "../components/math/DesmosMathKeyboard";
 import { questionGroupService } from "../services";
 import { questionService } from "../services/questionService";
 import type { QuestionGroupQuestionCreate } from "../models/questionGroups";
@@ -528,7 +528,7 @@ export function QuestionGroupQuestionCreate() {
             </Button>
           </div>
 
-          <MathQuillKeyboard
+          <DesmosMathKeyboard
             mathInputRef={activeMathRef}
             isVisible={isKeyboardVisible && !isSubmitting}
             onClose={() => setIsKeyboardVisible(false)}

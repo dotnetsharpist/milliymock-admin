@@ -11,6 +11,7 @@ import { QuestionGroupQuestionCreate } from "./pages/QuestionGroupQuestionCreate
 import { QuestionGroupOptionCreate } from "./pages/QuestionGroupOptionCreate";
 import { MathKeyboardTest } from "./pages/MathKeyboardTest";
 import { Users } from "./pages/Users";
+import { DesmosCalculator } from "./pages/DesmosCalculator";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
@@ -18,6 +19,10 @@ export const router = createBrowserRouter([
   {
     path: "/login",
     Component: Login,
+  },
+  {
+    path: "/desmos-calculator",
+    Component: DesmosCalculator,
   },
   {
     path: "/",

@@ -1,1 +1,0 @@
-window.__sbmCountryCode = "SE"; window.__sbmNoCcpa = true; console && console.log && console.log('GDPR is applicable in the EU');
