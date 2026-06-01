@@ -4,9 +4,9 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "../components/ui/button";
 import {
   MathQuillInput,
-  MathQuillKeyboard,
   type MathInputHandle,
 } from "../components/math/MathQuillField";
+import { DesmosMathFieldKeyboard } from "../../desmos-calculator-react";
 import { questionGroupService } from "../services";
 import { standaloneOptionService } from "../services";
 import type { CreateOptionForQuestionGroupData } from "../models/options";
@@ -157,7 +157,7 @@ export function QuestionGroupOptionCreate() {
             </Button>
           </div>
 
-          <MathQuillKeyboard
+          <DesmosMathFieldKeyboard
             mathInputRef={mathInputRef}
             isVisible={isKeyboardVisible && !isSubmitting}
             onClose={() => setIsKeyboardVisible(false)}

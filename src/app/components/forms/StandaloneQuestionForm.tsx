@@ -41,9 +41,9 @@ import { BASE_URL } from "../../config/api";
 import { getYouTubeThumbnailUrl } from "../../lib/video";
 import {
   MathQuillInput as SharedMathInput,
-  MathQuillKeyboard as SharedMathKeyboard,
   type MathInputHandle as SharedMathInputHandle,
 } from "../math/MathQuillField";
+import { DesmosMathFieldKeyboard } from "../../../desmos-calculator-react";
 
 // ─── MathQuill CDN Loader (Singleton) ────────────────────────────────────────
 
@@ -1427,7 +1427,7 @@ export function StandaloneQuestionForm({
         </Button>
       </div>
 
-      <SharedMathKeyboard
+      <DesmosMathFieldKeyboard
         mathInputRef={activeMathRef}
         isVisible={isKeyboardVisible && !isSubmitting}
         onClose={() => setIsKeyboardVisible(false)}

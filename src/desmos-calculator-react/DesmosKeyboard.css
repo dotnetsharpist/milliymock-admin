@@ -1,0 +1,61 @@
+/*
+ * DesmosKeyboard.css
+ * Styling for the hand-built Desmos-look math keyboard.
+ * Colors lifted from the real Desmos stylesheet:
+ *   accent #2f72dc / #2253a1, text #454545, borders #e2e2e2,
+ *   surfaces #eff2f3/#f5f5f5/#fafafa/#ffffff, light blue #d7e6ff.
+ */
+.dk-keyboard {
+  --dk-accent:#2f72dc; --dk-accent-dark:#2253a1; --dk-text:#454545;
+  --dk-border:#e2e2e2; --dk-surface:#eff2f3; --dk-key:#ffffff;
+  --dk-key-hover:#f5f5f5; --dk-key-active:#e2e2e2; --dk-tint:#d7e6ff;
+  box-sizing:border-box; width:100%; background:var(--dk-surface);
+  border-top:1px solid var(--dk-border); padding:10px;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  user-select:none;
+}
+.dk-keyboard *,.dk-keyboard *::before,.dk-keyboard *::after{box-sizing:border-box;}
+
+/* docked bottom-bar variant used inside the question forms */
+.dk-dock{position:fixed;left:0;right:0;bottom:0;z-index:50;box-shadow:0 -8px 28px rgba(0,0,0,.18);}
+.dk-inner{max-width:1180px;margin:0 auto;}
+
+.dk-controlbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:0 2px;}
+.dk-tabs{display:flex;gap:6px;}
+.dk-tab{border:1px solid var(--dk-border);background:var(--dk-key);color:var(--dk-text);
+  font-size:13px;font-weight:600;letter-spacing:.04em;padding:5px 14px;border-radius:6px;cursor:pointer;
+  transition:background .1s ease,color .1s ease,border-color .1s ease;}
+.dk-tab:hover{background:var(--dk-key-hover);}
+.dk-tab--active{background:var(--dk-accent);border-color:var(--dk-accent);color:#fff;}
+.dk-close{display:inline-flex;align-items:center;gap:4px;border:none;background:transparent;color:#949494;
+  font-size:13px;font-weight:600;padding:5px 8px;border-radius:6px;cursor:pointer;}
+.dk-close:hover{background:#e2e2e2;color:var(--dk-text);}
+
+.dk-body{display:grid;grid-template-columns:1fr 1fr minmax(150px,300px);gap:10px;align-items:stretch;}
+@media (max-width:720px){.dk-body{grid-template-columns:1fr 1fr;}.dk-block--control{grid-column:1 / -1;}}
+.dk-grid{display:grid;gap:6px;}
+.dk-grid--4{grid-template-columns:repeat(4,1fr);}
+.dk-grid--3{grid-template-columns:repeat(3,1fr);}
+.dk-grid--2{grid-template-columns:repeat(2,1fr);}
+
+.dk-key{position:relative;display:flex;align-items:center;justify-content:center;min-height:46px;padding:4px;
+  border:1px solid var(--dk-border);border-radius:8px;background:var(--dk-key);color:var(--dk-text);
+  font-size:18px;line-height:1;cursor:pointer;box-shadow:0 1px 0 rgba(0,0,0,.04);
+  transition:background .08s ease,transform .05s ease,box-shadow .08s ease;}
+.dk-key:hover{background:var(--dk-key-hover);}
+.dk-key:active,.dk-key--pressed{background:var(--dk-key-active);transform:scale(.96);box-shadow:none;}
+.dk-key em{font-family:"Times New Roman",Georgia,serif;font-style:italic;font-size:19px;}
+.dk-key sup{font-size:11px;vertical-align:super;}
+.dk-key sub{font-size:11px;vertical-align:sub;}
+.dk-key--num{font-size:19px;font-weight:500;}
+.dk-key--tint{background:var(--dk-tint);border-color:#c2d9ff;}
+.dk-key--tint:hover{background:#c8defc;}
+.dk-key--primary{background:var(--dk-accent);border-color:var(--dk-accent);color:#fff;box-shadow:0 1px 0 var(--dk-accent-dark);}
+.dk-key--primary:hover{background:#3b7fe6;}
+.dk-key--primary:active{background:var(--dk-accent-dark);}
+.dk-key--muted{font-size:13px;font-weight:600;letter-spacing:.06em;color:#6b6b6b;}
+.dk-key--wide{grid-column:span 2;}
+.dk-key--tall{min-height:100%;}
+
+.dk-root{position:relative;display:inline-block;font-size:18px;}
+.dk-root .dk-root-index{position:absolute;top:-6px;left:-7px;font-size:10px;}
