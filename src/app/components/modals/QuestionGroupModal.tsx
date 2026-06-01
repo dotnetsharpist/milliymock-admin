@@ -16,10 +16,9 @@ import {
 import {BASE_URL} from "../../config/api";
 import {toast} from "sonner";
 import {
-    MathQuillInput,
     type MathInputHandle,
 } from "../math/MathQuillField";
-import { DesmosMathFieldKeyboard } from "../../../desmos-calculator-react";
+import { MathInputSwitcher as MathQuillInput } from "../../../desmos-calculator-react/MathInputSwitcher";
 
 interface QuestionGroupModalProps {
     isOpen: boolean;
@@ -320,11 +319,6 @@ export function QuestionGroupModal({isOpen, onClose, onSave, group}: QuestionGro
                         </Button>
                     </div>
 
-                    <DesmosMathFieldKeyboard
-                        mathInputRef={activeMathRef}
-                        isVisible={isKeyboardVisible && !isSubmitting}
-                        onClose={() => setIsKeyboardVisible(false)}
-                    />
                 </form>
             </DialogContent>
         </Dialog>

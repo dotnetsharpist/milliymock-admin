@@ -12,10 +12,9 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import {
-  MathQuillInput,
   type MathInputHandle,
 } from "../components/math/MathQuillField";
-import { DesmosMathFieldKeyboard } from "../../desmos-calculator-react";
+import { MathInputSwitcher as MathQuillInput } from "../../desmos-calculator-react/MathInputSwitcher";
 import { testService } from "../services/testService";
 import { questionGroupService } from "../services";
 import type { QuestionGroupFormData } from "../models/questionGroups";
@@ -371,11 +370,6 @@ export function QuestionGroupCreate() {
             </Button>
           </div>
 
-          <DesmosMathFieldKeyboard
-            mathInputRef={activeMathRef}
-            isVisible={isKeyboardVisible && !isSubmitting}
-            onClose={() => setIsKeyboardVisible(false)}
-          />
         </form>
       </div>
     </div>

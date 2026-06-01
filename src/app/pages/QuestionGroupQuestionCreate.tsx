@@ -11,11 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import {
-  MathQuillInput,
-  type MathInputHandle,
-} from "../components/math/MathQuillField";
-import { DesmosMathFieldKeyboard } from "../../desmos-calculator-react";
+import { type MathInputHandle } from "../components/math/MathQuillField";
+import { MathInputSwitcher as MathQuillInput } from "../../desmos-calculator-react/MathInputSwitcher";
 import { questionGroupService } from "../services";
 import { questionService } from "../services/questionService";
 import type { QuestionGroupQuestionCreate } from "../models/questionGroups";
@@ -527,12 +524,6 @@ export function QuestionGroupQuestionCreate() {
                 : "Add Question"}
             </Button>
           </div>
-
-          <DesmosMathFieldKeyboard
-            mathInputRef={activeMathRef}
-            isVisible={isKeyboardVisible && !isSubmitting}
-            onClose={() => setIsKeyboardVisible(false)}
-          />
         </form>
       </div>
     </div>

@@ -3,10 +3,9 @@ import { useNavigate, useParams } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "../components/ui/button";
 import {
-  MathQuillInput,
   type MathInputHandle,
 } from "../components/math/MathQuillField";
-import { DesmosMathFieldKeyboard } from "../../desmos-calculator-react";
+import { MathInputSwitcher as MathQuillInput } from "../../desmos-calculator-react/MathInputSwitcher";
 import { questionGroupService } from "../services";
 import { standaloneOptionService } from "../services";
 import type { CreateOptionForQuestionGroupData } from "../models/options";
@@ -157,11 +156,6 @@ export function QuestionGroupOptionCreate() {
             </Button>
           </div>
 
-          <DesmosMathFieldKeyboard
-            mathInputRef={mathInputRef}
-            isVisible={isKeyboardVisible && !isSubmitting}
-            onClose={() => setIsKeyboardVisible(false)}
-          />
         </form>
       </div>
     </div>
