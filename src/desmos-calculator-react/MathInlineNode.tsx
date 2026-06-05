@@ -20,7 +20,6 @@ import {
 } from "@tiptap/react";
 import type { MathfieldElement } from "mathlive";
 import { cn } from "../app/components/ui/utils";
-import { applyDesmosKeyboard } from "./mathKeyboardLayout";
 
 function MathInlineView({
   node,
@@ -59,10 +58,11 @@ function MathInlineView({
     void import("mathlive").then(() => {
       const f = mfRef.current;
       if (cancelled || !f) return;
+      // the hand-built on-screen keyboard drives the field — keep MathLive's
+      // own virtual keyboard fully off.
       f.mathVirtualKeyboardPolicy = "manual";
       f.smartFence = true;
       editor.storage.mathInline.active = f;
-      applyDesmosKeyboard();
       const template: string = node.attrs.insert ?? "";
       if (template) {
         // fresh template → insert via MathLive so the first placeholder is selected
@@ -78,7 +78,6 @@ function MathInlineView({
         f.value = latex;
         f.focus();
       }
-      window.mathVirtualKeyboard?.show();
     });
     return () => {
       cancelled = true;

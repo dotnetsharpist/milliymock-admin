@@ -4,16 +4,20 @@
  * math editor). Prose typing is native and flawless; each formula is an inline
  * node you click to edit. The admin never touches raw LaTeX.
  *
+ * Input is driven by the hand-built `DesmosMathFieldKeyboard` (123/ABC/f(x)),
+ * routed to whichever math-field is active (or the prose). MathLive's own
+ * virtual keyboard is kept off so the two don't fight.
+ *
  * Storage format is unchanged — the value is serialised back to the project's
- * standard `text + \(latex\)` string (so the student renderer and `lib/math.ts`
- * keep working). Keeps the old `MathQuillInput` prop/ref surface so the forms
- * don't change.
+ * standard `text + \(latex\)` string. Keeps the old `MathQuillInput` prop/ref
+ * surface so the forms don't change.
  */
 import {
   forwardRef,
   useEffect,
   useImperativeHandle,
   useRef,
+  useState,
 } from "react";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -22,7 +26,7 @@ import { Label } from "../app/components/ui/label";
 import { cn } from "../app/components/ui/utils";
 import type { MathInputHandle } from "../app/components/math/MathQuillField";
 import { MathInline } from "./MathInlineNode";
-import { applyDesmosKeyboard } from "./mathKeyboardLayout";
+import { DesmosMathFieldKeyboard } from "./DesmosMathFieldKeyboard";
 import "./DesmosKeyboard.css";
 
 const INLINE_MATH = /\\\(([\s\S]+?)\\\)/g;
@@ -94,7 +98,7 @@ const HELPER_BUTTONS: Array<{ label: string; latex: string }> = [
   { label: "∞", latex: "\\infty" },
 ];
 
-/** cmd() shortcuts (driven by the old keyboard refs) → MathLive insert latex. */
+/** cmd() shortcuts (driven by the keyboard) → MathLive insert latex. */
 const CMD_LATEX: Record<string, string> = {
   "^": "#@^{#?}",
   _: "#@_{#?}",
@@ -102,6 +106,12 @@ const CMD_LATEX: Record<string, string> = {
   "\\nthroot": "\\sqrt[#?]{#?}",
   "\\frac": "\\frac{#@}{#?}",
   "/": "\\frac{#@}{#?}",
+};
+
+const MF_KEY: Record<string, string> = {
+  Backspace: "deleteBackward",
+  Left: "moveToPreviousChar",
+  Right: "moveToNextChar",
 };
 
 interface MathInputSwitcherProps {
@@ -119,6 +129,7 @@ export const MathInputSwitcher = forwardRef<
   MathInputSwitcherProps
 >(({ label, onInput, initialValue = "", onFocus, disabled, compact }, ref) => {
   const lastEmitted = useRef(initialValue);
+  const [kbOpen, setKbOpen] = useState(false);
 
   const editor = useEditor({
     editable: !disabled,
@@ -144,13 +155,11 @@ export const MathInputSwitcher = forwardRef<
       lastEmitted.current = next;
       onInput?.(next);
     },
-    onFocus: () => onFocus?.(),
+    onFocus: () => {
+      setKbOpen(true);
+      onFocus?.();
+    },
   });
-
-  // make MathLive register + use the Desmos keyboard layout once mounted
-  useEffect(() => {
-    void import("mathlive").then(() => applyDesmosKeyboard());
-  }, []);
 
   // reflect external initialValue changes (e.g. edit-mode data loading late)
   useEffect(() => {
@@ -165,10 +174,13 @@ export const MathInputSwitcher = forwardRef<
     editor?.setEditable(!disabled);
   }, [editor, disabled]);
 
+  const activeField = (): MathfieldElement | null =>
+    (editor?.storage.mathInline?.active as MathfieldElement | null) ?? null;
+
   /** Insert a snippet into the active math-field, or as a new formula node. */
   const insertSnippet = (latex: string) => {
     if (!editor) return;
-    const active = editor.storage.mathInline?.active as MathfieldElement | null;
+    const active = activeField();
     if (active) {
       active.focus();
       active.insert(latex, {
@@ -190,31 +202,60 @@ export const MathInputSwitcher = forwardRef<
       .run();
   };
 
-  useImperativeHandle(
-    ref,
-    () => ({
-      focus: () => editor?.commands.focus(),
-      getLatex: () => (editor ? serialize(editor) : ""),
-      write: (latex: string) => insertSnippet(latex),
-      cmd: (c: string) => insertSnippet(CMD_LATEX[c] ?? c),
-      typedText: (text: string) => {
-        const active = editor?.storage.mathInline?.active as
-          | MathfieldElement
-          | null
-          | undefined;
-        if (active) active.insert(text, { focus: true });
-        else editor?.commands.insertContent(text);
-      },
-      keystroke: (key: string) => {
-        const active = editor?.storage.mathInline?.active as
-          | MathfieldElement
-          | null
-          | undefined;
-        if (active && key === "Backspace") active.executeCommand?.("deleteBackward");
-      },
-    }),
-    [editor],
-  );
+  const doTyped = (text: string) => {
+    const active = activeField();
+    if (active) active.insert(text, { focus: true });
+    else editor?.commands.insertContent(text);
+  };
+
+  const doKeystroke = (key: string) => {
+    const active = activeField();
+    if (active) {
+      if (key === "Enter") active.blur();
+      else if (MF_KEY[key]) active.executeCommand(MF_KEY[key]);
+      return;
+    }
+    if (!editor) return;
+    const { from, empty } = editor.state.selection;
+    if (key === "Backspace") {
+      editor.commands.focus();
+      if (empty) editor.commands.deleteRange({ from: Math.max(0, from - 1), to: from });
+      else editor.commands.deleteSelection();
+    } else if (key === "Left") {
+      editor.commands.setTextSelection(Math.max(0, from - 1));
+    } else if (key === "Right") {
+      editor.commands.setTextSelection(from + 1);
+    } else if (key === "Enter") {
+      editor.commands.splitBlock();
+    }
+  };
+
+  // imperative handle shared by the on-screen keyboard and the forms' refs
+  const handleRef = useRef<MathInputHandle>({
+    cmd: () => undefined,
+    write: () => undefined,
+    typedText: () => undefined,
+    keystroke: () => undefined,
+    focus: () => undefined,
+    getLatex: () => "",
+  });
+  handleRef.current = {
+    cmd: (c) => insertSnippet(CMD_LATEX[c] ?? c),
+    write: (latex) => insertSnippet(latex),
+    typedText: (text) => doTyped(text),
+    keystroke: (key) => doKeystroke(key),
+    focus: () => editor?.commands.focus(),
+    getLatex: () => (editor ? serialize(editor) : ""),
+  };
+
+  useImperativeHandle(ref, () => ({
+    focus: () => handleRef.current.focus(),
+    getLatex: () => handleRef.current.getLatex(),
+    write: (a: string) => handleRef.current.write(a),
+    cmd: (a: string) => handleRef.current.cmd(a),
+    typedText: (a: string) => handleRef.current.typedText(a),
+    keystroke: (a: string) => handleRef.current.keystroke(a),
+  }));
 
   return (
     <div className="relative">
@@ -227,7 +268,6 @@ export const MathInputSwitcher = forwardRef<
           disabled ? "opacity-60" : "",
         )}
         onMouseDown={(e) => {
-          // clicks on empty area focus the editor at the end
           if (e.target === e.currentTarget) editor?.commands.focus("end");
         }}
       >
@@ -269,6 +309,12 @@ export const MathInputSwitcher = forwardRef<
           </button>
         ))}
       </div>
+
+      <DesmosMathFieldKeyboard
+        mathInputRef={handleRef}
+        isVisible={kbOpen && !disabled}
+        onClose={() => setKbOpen(false)}
+      />
     </div>
   );
 });
