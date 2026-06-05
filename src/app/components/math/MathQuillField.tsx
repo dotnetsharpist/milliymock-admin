@@ -234,13 +234,13 @@ export const MathQuillInput = forwardRef<MathInputHandle, MathQuillInputProps>(
           field.className = `math-live-field ${compact ? "compact" : ""}`;
           field.setAttribute("aria-label", "Math formula input");
           field.mathVirtualKeyboardPolicy = "manual";
-          field.defaultMode = "math";
-          // Always pure math mode — matches the old MathQuill keyboard.
-          // smartMode could drift into text mode and render `^{2}` literally.
+          // Default to TEXT mode so the field works for writing question prose:
+          // typing letters stays normal text and the space bar inserts real
+          // spaces. Formulas are still entered via the on-screen keyboard, whose
+          // keys insert in math mode (so `^{2}`, `\frac{}{}`, … render as math).
+          field.defaultMode = "text";
           field.smartMode = false;
           field.smartFence = true;
-          // Physical space bar inserts a space in math mode, matching the
-          // on-screen SPACE key (`\;`). Without this, space does nothing.
           field.mathModeSpace = "\\;";
 
           if (initialValue) {

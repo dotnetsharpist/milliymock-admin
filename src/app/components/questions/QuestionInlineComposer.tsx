@@ -20,6 +20,9 @@ interface QuestionInlineComposerProps {
   onChange: (value: string) => void;
   disabled?: boolean;
   className?: string;
+  title?: string;
+  description?: string;
+  placeholder?: string;
 }
 
 const createFormulaId = () =>
@@ -30,6 +33,9 @@ export function QuestionInlineComposer({
   onChange,
   disabled = false,
   className,
+  title = "Question Content",
+  description = "Matnni shu maydonga yozing, formula kerak bo‘lsa `Add Formula` orqali ichiga qo‘shing.",
+  placeholder = "Savol matnini yozing va formulalarni keyboard orqali shu yerning ichiga qo‘shing...",
 }: QuestionInlineComposerProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<HTMLDivElement | null>(null);
@@ -677,13 +683,10 @@ export function QuestionInlineComposer({
       <div className="rounded-[2rem] border border-[#ecd8c1] bg-[linear-gradient(160deg,rgba(255,250,245,0.98),rgba(255,255,255,0.98))] p-4 shadow-[0_26px_70px_-52px_rgba(120,53,15,0.55)]">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="space-y-1">
-            <p className="text-sm font-semibold text-neutral-900">
-              Question Content
-            </p>
-            <p className="text-xs leading-5 text-neutral-500">
-              Matnni shu maydonga yozing, formula kerak bo‘lsa `Add Formula`
-              orqali ichiga qo‘shing.
-            </p>
+            <p className="text-sm font-semibold text-neutral-900">{title}</p>
+            {description ? (
+              <p className="text-xs leading-5 text-neutral-500">{description}</p>
+            ) : null}
           </div>
 
           <div className="flex items-center gap-2">
@@ -704,8 +707,7 @@ export function QuestionInlineComposer({
         <div className="relative rounded-[1.6rem] border border-[#e8d6c4] bg-white px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_18px_36px_-34px_rgba(120,53,15,0.4)]">
           {isEditorEmpty && (
             <p className="pointer-events-none absolute left-5 top-4 right-5 text-[1.02rem] leading-8 text-neutral-400">
-              Savol matnini yozing va formulalarni keyboard orqali shu yerning
-              ichiga qo‘shing...
+              {placeholder}
             </p>
           )}
 
