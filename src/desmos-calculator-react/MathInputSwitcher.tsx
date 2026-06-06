@@ -22,6 +22,7 @@ import {
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import type { MathfieldElement } from "mathlive";
+import { ClipboardPaste } from "lucide-react";
 import { Label } from "../app/components/ui/label";
 import { cn } from "../app/components/ui/utils";
 import type { MathInputHandle } from "../app/components/math/MathQuillField";
@@ -51,31 +52,58 @@ function serialize(editor: Editor): string {
   return lines.join("\n");
 }
 
+/** One line of `text + \(latex\)` → inline content nodes (text + math). */
+function lineToInline(line: string): Array<Record<string, unknown>> {
+  const content: Array<Record<string, unknown>> = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  INLINE_MATH.lastIndex = 0;
+  while ((m = INLINE_MATH.exec(line))) {
+    if (m.index > last) {
+      content.push({ type: "text", text: line.slice(last, m.index) });
+    }
+    content.push({ type: "mathInline", attrs: { latex: m[1].trim() } });
+    last = INLINE_MATH.lastIndex;
+  }
+  if (last < line.length) {
+    content.push({ type: "text", text: line.slice(last) });
+  }
+  return content;
+}
+
 /** `text + \(latex\)` string → editor document JSON. */
 function parse(value: string): Record<string, unknown> {
   const lines = (value ?? "").split("\n");
   return {
     type: "doc",
     content: lines.map((line) => {
-      const content: Array<Record<string, unknown>> = [];
-      let last = 0;
-      let m: RegExpExecArray | null;
-      INLINE_MATH.lastIndex = 0;
-      while ((m = INLINE_MATH.exec(line))) {
-        if (m.index > last) {
-          content.push({ type: "text", text: line.slice(last, m.index) });
-        }
-        content.push({ type: "mathInline", attrs: { latex: m[1].trim() } });
-        last = INLINE_MATH.lastIndex;
-      }
-      if (last < line.length) {
-        content.push({ type: "text", text: line.slice(last) });
-      }
+      const content = lineToInline(line);
       return content.length
         ? { type: "paragraph", content }
         : { type: "paragraph" };
     }),
   };
+}
+
+/** Normalise common math delimiters in pasted text to the project's `\(…\)`. */
+function normalizeMathDelimiters(text: string): string {
+  return text
+    .replace(/\$\$([\s\S]+?)\$\$/g, (_, m) => `\\(${m.trim()}\\)`)
+    .replace(/\\\[([\s\S]+?)\\\]/g, (_, m) => `\\(${m.trim()}\\)`)
+    .replace(/\\\(([\s\S]+?)\\\)/g, (_, m) => `\\(${m.trim()}\\)`)
+    .replace(/(^|[^\\$])\$([^$\n]+?)\$/g, (_, pre, m) => `${pre}\\(${m.trim()}\\)`);
+}
+
+/** If the whole clipboard looks like a bare LaTeX formula (no delimiters),
+ *  wrap it so it becomes a formula node. Conservative: needs a LaTeX command
+ *  or a sub/superscript group, and must be a single line. */
+function maybeWrapBareLatex(text: string): string {
+  if (/\\\(/.test(text)) return text;
+  const trimmed = text.trim();
+  if (!trimmed || trimmed.includes("\n")) return text;
+  const looksLatex = /\\[a-zA-Z]+\b|[\^_]\{|\\frac|\\sqrt|\\begin\{/.test(trimmed);
+  if (looksLatex) return `\\(${trimmed}\\)`;
+  return text;
 }
 
 /** Quick-insert templates (MathLive insert syntax: `#?` / `#@` = placeholders). */
@@ -202,6 +230,37 @@ export const MathInputSwitcher = forwardRef<
       .run();
   };
 
+  /** Paste clipboard text, building any LaTeX/math it contains as formulas. */
+  const handlePaste = async () => {
+    if (!editor || disabled) return;
+    let text = "";
+    try {
+      text = await navigator.clipboard.readText();
+    } catch {
+      window.alert(
+        "Clipboardni o'qib bo'lmadi. Brauzer ruxsatini bering yoki Ctrl+V dan foydalaning.",
+      );
+      return;
+    }
+    if (!text) return;
+    const normalized = maybeWrapBareLatex(normalizeMathDelimiters(text));
+    const lines = normalized.split("\n");
+    editor.commands.focus();
+    if (lines.length === 1) {
+      const inline = lineToInline(lines[0]);
+      if (inline.length) editor.commands.insertContent(inline);
+    } else {
+      editor.commands.insertContent(
+        lines.map((line) => {
+          const content = lineToInline(line);
+          return content.length
+            ? { type: "paragraph", content }
+            : { type: "paragraph" };
+        }),
+      );
+    }
+  };
+
   const doTyped = (text: string) => {
     const active = activeField();
     if (active) active.insert(text, { focus: true });
@@ -263,7 +322,7 @@ export const MathInputSwitcher = forwardRef<
 
       <div
         className={cn(
-          "math-editor rounded-xl border-2 border-gray-300 bg-white px-4 py-3 text-lg leading-relaxed text-gray-900 shadow-sm transition-colors focus-within:border-blue-500",
+          "math-editor relative rounded-xl border-2 border-gray-300 bg-white py-3 pl-4 pr-12 text-lg leading-relaxed text-gray-900 shadow-sm transition-colors focus-within:border-blue-500",
           compact ? "min-h-[60px]" : "min-h-[96px]",
           disabled ? "opacity-60" : "",
         )}
@@ -272,6 +331,19 @@ export const MathInputSwitcher = forwardRef<
         }}
       >
         <EditorContent editor={editor} />
+
+        {/* paste from clipboard — builds any LaTeX/math it contains */}
+        <button
+          type="button"
+          disabled={disabled}
+          title="Clipboarddan joylash (formulalar bilan)"
+          aria-label="Clipboarddan joylash"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={handlePaste}
+          className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 disabled:opacity-50"
+        >
+          <ClipboardPaste className="h-4 w-4" />
+        </button>
       </div>
 
       {/* hint */}
