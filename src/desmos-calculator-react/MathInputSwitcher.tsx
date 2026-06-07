@@ -108,6 +108,7 @@ function maybeWrapBareLatex(text: string): string {
 
 /** Quick-insert templates (MathLive insert syntax: `#?` / `#@` = placeholders). */
 const HELPER_BUTTONS: Array<{ label: string; latex: string }> = [
+  // structures
   { label: "{ cases", latex: "\\begin{cases}#@ & #?\\\\#? & #?\\end{cases}" },
   { label: "a/b", latex: "\\frac{#@}{#?}" },
   { label: "√", latex: "\\sqrt{#?}" },
@@ -115,15 +116,41 @@ const HELPER_BUTTONS: Array<{ label: string; latex: string }> = [
   { label: "x²", latex: "#@^{2}" },
   { label: "xⁿ", latex: "#@^{#?}" },
   { label: "xₙ", latex: "#@_{#?}" },
-  { label: "°", latex: "#@^{\\circ}" },
+  { label: "∫", latex: "\\int_{#?}^{#?}" },
+  // grouping
   { label: "( )", latex: "\\left(#?\\right)" },
+  { label: "(", latex: "(" },
+  { label: ")", latex: ")" },
   { label: "|x|", latex: "\\left|#?\\right|" },
-  { label: "π", latex: "\\pi" },
+  // variables
+  { label: "x", latex: "x" },
+  { label: "y", latex: "y" },
+  // relations
+  { label: "<", latex: "<" },
+  { label: ">", latex: ">" },
   { label: "≤", latex: "\\le" },
   { label: "≥", latex: "\\ge" },
   { label: "≠", latex: "\\ne" },
-  { label: "·", latex: "\\cdot" },
+  { label: "≈", latex: "\\approx" },
+  { label: "~", latex: "\\sim" },
+  // sets
+  { label: "∈", latex: "\\in" },
+  { label: "∪", latex: "\\cup" },
+  { label: "∩", latex: "\\cap" },
+  { label: "⊂", latex: "\\subset" },
+  { label: "⊆", latex: "\\subseteq" },
+  { label: "⊈", latex: "\\nsubseteq" },
+  { label: "∅", latex: "\\emptyset" },
+  { label: "⊥", latex: "\\perp" },
+  // symbols
+  { label: "π", latex: "\\pi" },
   { label: "∞", latex: "\\infty" },
+  { label: "°", latex: "#@^{\\circ}" },
+  { label: "·", latex: "\\cdot" },
+  // greek
+  { label: "α", latex: "\\alpha" },
+  { label: "β", latex: "\\beta" },
+  { label: "γ", latex: "\\gamma" },
 ];
 
 /** cmd() shortcuts (driven by the keyboard) → MathLive insert latex. */
