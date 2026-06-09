@@ -81,6 +81,10 @@ export function Tests() {
             accessor: (test) => test.description || "-"
         },
         {
+            header: "Subject",
+            accessor: (test) => test.subject || "-"
+        },
+        {
             header: "Question Count",
             accessor: (test) => (
                 <span
