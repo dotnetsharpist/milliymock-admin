@@ -73,7 +73,7 @@ export function TestModal({
 
         try {
             if (!formData.subject.trim()) {
-                toast.error("Please enter a subject");
+                toast.error("Please select a subject");
                 return;
             }
 
@@ -178,19 +178,32 @@ export function TestModal({
                     <div className="space-y-2">
                         <Label htmlFor="subject">Subject</Label>
 
-                        <Input
-                            id="subject"
+                        <Select
                             value={formData.subject}
-                            onChange={(e) =>
+                            onValueChange={(value) =>
                                 setFormData((prev) => ({
                                     ...prev,
-                                    subject: e.target.value,
+                                    subject: value,
                                 }))
                             }
-                            placeholder="e.g. React, Vue.js, Mathematics"
-                            required
                             disabled={loading}
-                        />
+                        >
+                            <SelectTrigger id="subject">
+                                <SelectValue placeholder="Select subject" />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                                <SelectItem value="Math">Math</SelectItem>
+
+                                <SelectItem value="Biology">
+                                    Biology
+                                </SelectItem>
+
+                                <SelectItem value="History">
+                                    History
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     {test && (
