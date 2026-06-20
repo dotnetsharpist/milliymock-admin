@@ -10,6 +10,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
+import { Switch } from "../ui/switch";
 import { Test, Status } from "../../models/tests";
 import { testService } from "../../services";
 import { toast } from "sonner";
@@ -39,11 +40,17 @@ export function TestModal({
         title: string;
         description: string;
         subject: string;
+        isPremium: boolean;
+        price: string;
+        durationMinutes: string;
         status: Status | "";
     }>({
         title: "",
         description: "",
         subject: "",
+        isPremium: false,
+        price: "",
+        durationMinutes: "",
         status: "",
     });
 
@@ -55,6 +62,12 @@ export function TestModal({
                 title: test.title,
                 description: test.description || "",
                 subject: test.subject || "",
+                isPremium: test.isPremium ?? false,
+                price: test.price != null ? String(test.price) : "",
+                durationMinutes:
+                    test.durationMinutes != null
+                        ? String(test.durationMinutes)
+                        : "",
                 status: test.status || "",
             });
         } else {
@@ -62,6 +75,9 @@ export function TestModal({
                 title: "",
                 description: "",
                 subject: "",
+                isPremium: false,
+                price: "",
+                durationMinutes: "",
                 status: "",
             });
         }
@@ -77,10 +93,39 @@ export function TestModal({
                 return;
             }
 
+            const durationMinutes = Number(formData.durationMinutes);
+
+            if (
+                !formData.durationMinutes.trim() ||
+                !Number.isInteger(durationMinutes) ||
+                durationMinutes <= 0
+            ) {
+                toast.error("Please enter a valid duration in minutes");
+                return;
+            }
+
+            let price: number | null = null;
+
+            if (formData.isPremium) {
+                price = Number(formData.price);
+
+                if (
+                    !formData.price.trim() ||
+                    !Number.isInteger(price) ||
+                    price <= 0
+                ) {
+                    toast.error("Please enter a valid whole-number price for the premium test");
+                    return;
+                }
+            }
+
             const payload = {
                 title: formData.title.trim(),
                 description: formData.description.trim() || null,
                 subject: formData.subject.trim(),
+                isPremium: formData.isPremium,
+                price,
+                durationMinutes,
                 ...(test && { status: formData.status }),
             };
 
@@ -205,6 +250,79 @@ export function TestModal({
                             </SelectContent>
                         </Select>
                     </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="durationMinutes">
+                            Duration (minutes)
+                        </Label>
+
+                        <Input
+                            id="durationMinutes"
+                            type="number"
+                            min="1"
+                            step="1"
+                            value={formData.durationMinutes}
+                            onChange={(e) =>
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    durationMinutes: e.target.value.replace(
+                                        /[^0-9]/g,
+                                        ""
+                                    ),
+                                }))
+                            }
+                            placeholder="e.g. 60"
+                            required
+                        />
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-md border border-neutral-200 p-3">
+                        <div className="space-y-0.5">
+                            <Label htmlFor="isPremium">Premium test</Label>
+
+                            <p className="text-sm text-neutral-500">
+                                Require payment to access this test.
+                            </p>
+                        </div>
+
+                        <Switch
+                            id="isPremium"
+                            checked={formData.isPremium}
+                            onCheckedChange={(checked) =>
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    isPremium: checked,
+                                    price: checked ? prev.price : "",
+                                }))
+                            }
+                            disabled={loading}
+                        />
+                    </div>
+
+                    {formData.isPremium && (
+                        <div className="space-y-2">
+                            <Label htmlFor="price">Price</Label>
+
+                            <Input
+                                id="price"
+                                type="number"
+                                min="1"
+                                step="1"
+                                value={formData.price}
+                                onChange={(e) =>
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        price: e.target.value.replace(
+                                            /[^0-9]/g,
+                                            ""
+                                        ),
+                                    }))
+                                }
+                                placeholder="e.g. 10"
+                                required
+                            />
+                        </div>
+                    )}
 
                     {test && (
                         <div className="space-y-2">

@@ -85,6 +85,26 @@ export function Tests() {
             accessor: (test) => test.subject || "-"
         },
         {
+            header: "Duration",
+            accessor: (test) =>
+                test.durationMinutes != null ? `${test.durationMinutes} min` : "-"
+        },
+        {
+            header: "Price",
+            accessor: (test) =>
+                test.isPremium ? (
+                    <span
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        {test.price != null ? `$${test.price}` : "Paid"}
+                    </span>
+                ) : (
+                    <span
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-700">
+                        Free
+                    </span>
+                ),
+        },
+        {
             header: "Question Count",
             accessor: (test) => (
                 <span

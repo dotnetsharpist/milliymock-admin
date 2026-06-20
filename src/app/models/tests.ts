@@ -5,6 +5,9 @@ export interface Test {
     title: string;
     description: string | null;
     subject?: string | null;
+    isPremium: boolean;
+    price: number | null;
+    durationMinutes: number;
     status?: Status;
     questionCount: number;
 }
@@ -13,11 +16,17 @@ export interface CreateTestData {
     title: string;
     description: string | null;
     subject: string;
+    isPremium: boolean;
+    price: number | null;
+    durationMinutes: number;
 }
 
 export interface UpdateTestData {
     title: string;
     description: string | null;
     subject: string;
+    isPremium: boolean;
+    price: number | null;
+    durationMinutes: number;
     status: Status;
 }
