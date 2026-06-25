@@ -124,7 +124,7 @@ export function TestModal({
                 description: formData.description.trim() || null,
                 subject: formData.subject.trim(),
                 isPremium: formData.isPremium,
-                price,
+                price: test ? price ?? 0 : price,
                 durationMinutes,
                 ...(test && { status: formData.status }),
             };
