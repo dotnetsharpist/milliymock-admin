@@ -39,8 +39,9 @@ export const API_ENDPOINTS = {
     GROUP_OPTIONS_BY_GROUP: (groupId: string) => `api/question-groups/${groupId}/options`,
 
     // Users
-    USERS: "api/users",
-    USER_BY_ID: (id: string) => `api/users/${id}`,
+    USERS: "api/user",
+    USERS_ALL: "api/user/all", // admin-only: list all registered users
+    USER_BY_ID: (id: string) => `api/user/${id}`,
 } as const;
 
 // Local Storage Keys

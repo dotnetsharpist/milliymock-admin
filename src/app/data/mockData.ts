@@ -61,6 +61,7 @@ export interface User {
   name: string;
   role: string;
   createdAt: string;
+  emailConfirmed?: boolean;
 }
 
 export const mockTests: Test[] = [
